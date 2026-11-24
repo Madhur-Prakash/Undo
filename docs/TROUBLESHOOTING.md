@@ -237,7 +237,7 @@ undo track ~/project --no-scan
 ```sh
 du -sh ~/project/* ~/project/.[!.]* 2>/dev/null | sort -h | tail -15
 undo exclude add "dist/"
-undo exclude add "*.log"
+undo exclude add "*.csv"
 undo scan ~/project
 ```
 

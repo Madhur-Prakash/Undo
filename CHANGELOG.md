@@ -29,7 +29,7 @@ First release.
   your work: Python wheels and eggs (`*.whl`, `*.egg`, `*.egg-info/`, `.eggs/`), environments
   (`venv/`, `site-packages/`, `__pypackages__/`, `.nox/`), `*.pyc`/`*.pyo`; Node package stores
   (`.npm/`, `.pnpm-store/`, `.yarn/`, `bower_components/`, `jspm_packages/`); Rust build output
-  and homes (`target/`, `.cargo/`, `.rustup/`, `*.crate`). Later versions add new defaults to
+  and homes (`target/`, `.cargo/`, `.rustup/`, `*.crate`); log files (`*.log`). Later versions add new defaults to
   existing installs once, on upgrade (`exclusions.defaults_version`); a default you removed is
   never added back.
 - Undo refuses to track its own data folder and, in installed builds, its program folder

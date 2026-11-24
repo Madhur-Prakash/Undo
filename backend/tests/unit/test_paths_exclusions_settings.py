@@ -104,12 +104,14 @@ def test_upgrade_adds_new_default_exclusions_once(tmp_path: Path) -> None:
     from undo_core.config import defaults as d
 
     # A config saved by 1.0.0: no defaults_version, the user removed "*.tmp".
-    old = [p for p in d.DEFAULT_EXCLUSIONS if p not in d.DEFAULT_EXCLUSIONS_ADDED[2]]
+    added = {p for patterns in d.DEFAULT_EXCLUSIONS_ADDED.values() for p in patterns}
+    old = [p for p in d.DEFAULT_EXCLUSIONS if p not in added]
     old.remove("*.tmp")
     (tmp_path / "config.json").write_text(json.dumps({"exclusions": {"defaults": old}}))
     current = SettingsStore(tmp_path / "config.json").current.exclusions
     assert current.defaults_version == d.DEFAULT_EXCLUSIONS_VERSION
     assert "*.whl" in current.defaults and "target/" in current.defaults
+    assert "*.log" in current.defaults  # added by version 3
     assert "*.tmp" not in current.defaults  # removed by the user: stays removed
     assert len(current.defaults) == len(set(current.defaults))
 

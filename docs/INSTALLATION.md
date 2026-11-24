@@ -65,13 +65,14 @@ Already skipped by default, inside any tracked folder (`undo exclude list` shows
 | Node | `node_modules/`, `.npm/`, `.pnpm-store/`, `.yarn/` |
 | Rust | `target/`, `.cargo/`, `.rustup/` |
 | Temporary and lock files | `*.tmp`, `*.swp`, `~$*` and similar |
+| Log files | `*.log` |
 
 Add your own exclusions for anything else that is generated or downloaded, **before** the first
 scan:
 
 ```sh
 undo exclude add "dist/"          # a folder name, anywhere in tracked folders
-undo exclude add "*.log"          # a file pattern
+undo exclude add "*.bak"          # a file pattern
 undo exclude add "data/raw"       # a path relative to the tracked folder
 undo exclude list
 ```

@@ -789,7 +789,7 @@ class _ExclusionsCard extends ConsumerWidget {
             ),
             (
               'Default patterns',
-              'Version control, caches, temp files, package folders such as node_modules, venv and target',
+              'Version control, caches, temp and log files, package folders such as node_modules, venv and target',
               false,
               [
                 for (final e in list)

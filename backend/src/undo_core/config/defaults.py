@@ -16,7 +16,7 @@ READ_BUFFER = 1 * MIB
 
 # Default exclusion patterns. Trailing "/" means "directory with this name" (anywhere in a
 # tracked folder, with everything below it); other patterns match file or directory names.
-# They cover version-control internals, tool caches, temporary files and installed packages:
+# They cover version-control internals, tool caches, temporary and log files, and installed packages:
 # things that are regenerated, change constantly and are not your work. Remove any of them
 # with `undo exclude remove PATTERN` (or `undo settings set exclusions.defaults ...`).
 #
@@ -70,6 +70,10 @@ DEFAULT_EXCLUSIONS_ADDED: dict[int, list[str]] = {
         ".cargo/",
         ".rustup/",
         "*.crate",
+    ],
+    3: [
+        # Log files: rewritten constantly by running programs, rarely worth versioning
+        "*.log",
     ],
 }
 DEFAULT_EXCLUSIONS_VERSION: int = max(DEFAULT_EXCLUSIONS_ADDED)

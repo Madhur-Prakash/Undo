@@ -144,8 +144,8 @@ setting below can also be changed on the app's **Settings** page; exclusion patt
 | `retention.max_storage_bytes` | none | storage quota, e.g. `50GB` |
 | `retention.interval_seconds` | 86400 | how often retention runs (first run 10 min after the daemon starts) |
 | `compression.min_size` / `skip_extensions` | 64 B / archives, images, video … | stored uncompressed |
-| `exclusions.defaults` | VCS dirs, tool caches, temp/swap files; Python wheels, eggs, `site-packages/`, `venv/`, `*.pyc`; Node `node_modules/`, `.npm/`, `.pnpm-store/`, `.yarn/`; Rust `target/`, `.cargo/`, `.rustup/`, `*.crate` | `undo exclude list` shows them all; `undo exclude remove PATTERN` drops one (e.g. `target/` if you keep your own folder named *target*) |
-| `exclusions.defaults_version` | 2 | which release of the default list yours is up to date with; new defaults are added once on upgrade, removed ones never come back |
+| `exclusions.defaults` | VCS dirs, tool caches, temp/swap files; Python wheels, eggs, `site-packages/`, `venv/`, `*.pyc`; Node `node_modules/`, `.npm/`, `.pnpm-store/`, `.yarn/`; Rust `target/`, `.cargo/`, `.rustup/`, `*.crate`; log files `*.log` | `undo exclude list` shows them all; `undo exclude remove PATTERN` drops one (e.g. `target/` if you keep your own folder named *target*) |
+| `exclusions.defaults_version` | 3 | which release of the default list yours is up to date with; new defaults are added once on upgrade, removed ones never come back |
 | `api.host` / `api.port` | 127.0.0.1 / 47821 | loopback only unless `api.allow_remote` |
 | `daemon.autostart` | true | GUI/TUI start the daemon when needed |
 | `daemon.gc_interval_seconds` / `gc_grace_seconds` | 86400 / 3600 | |
