@@ -13,6 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   (`venv/`, `site-packages/`, `__pypackages__/`, `.nox/`), `*.pyc`/`*.pyo`; Node package stores
   (`.npm/`, `.pnpm-store/`, `.yarn/`, `bower_components/`, `jspm_packages/`); Rust build output
   and homes (`target/`, `.cargo/`, `.rustup/`, `*.crate`).
+- `scripts/update_linux.sh` and `scripts/update_windows.sh`: update Undo to the checked-out code
+  (optionally `--pull` first) and restart the daemon, whichever way it runs (systemd user or
+  system service, plain `undo start`; on Windows by building and silently running the
+  installer).
+- New app icon: a bold counter-clockwise arrow ring with a violet-to-blue gradient on a light
+  squircle tile.
 - `exclusions.defaults_version`: existing installs receive defaults added by newer versions once,
   on upgrade. A default you removed is never added back.
 
@@ -118,7 +124,7 @@ First release.
   details, preview, diff and a restore dialog that shows what will happen first.
 - Starts the daemon automatically when it is not running (`daemon.autostart`).
 - Native folder picker with no Flutter plugins, so Windows Developer Mode is not needed to build.
-- App icon: a counter-clockwise arrow around clock hands (`gui/assets/undo.ico`, drawn by
+- App icon: a bold counter-clockwise arrow ring with a violet-to-blue gradient on a light tile (`gui/assets/undo.ico`, drawn by
   `scripts/make_icon.py`).
 
 #### Installation and packaging

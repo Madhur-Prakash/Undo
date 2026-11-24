@@ -148,9 +148,39 @@ the rescan the daemon runs when it starts. To record changes when nobody is sign
 
 ### Updating
 
-Run the newer `Undo-Setup-<version>.exe` and keep the options ticked. Setup asks you to close the
-app, stops the daemon cleanly, replaces the programs and starts the daemon again. Your history and
-settings are kept, and new default exclusions are added to your list once.
+Run the newer `Undo-Setup-<version>.exe` and keep the options ticked. Setup:
+
+* asks you to close the app,
+* stops the daemon cleanly,
+* replaces the programs,
+* re-registers start-at-sign-in and starts the new daemon.
+
+Your history and settings are kept, and new default exclusions are added to your list once. There
+is no separate "reload" step on Windows: the installer does the whole restart.
+
+**From source, after `git pull`:** one command in Git Bash builds the installer from your checkout
+and installs it silently:
+
+```sh
+bash scripts/update_windows.sh --pull
+```
+
+[`scripts/update_windows.sh`](../scripts/update_windows.sh):
+
+1. builds `Undo-Setup-<version>.exe` with Inno Setup. This needs uv, Flutter and Visual Studio;
+   see [Building the installer](#building-the-installer).
+2. closes the app and stops the daemon,
+3. runs Setup silently with *start at sign-in* and *add to PATH* on (log:
+   `gui/installer/build/install.log`),
+4. checks `undo --version`, `undo status` and `undo service status`.
+
+It finds Inno Setup 6 or 7 in the usual folders, or uses `ISCC=/path/to/ISCC.exe`. Options:
+
+| Option | Effect |
+|---|---|
+| `--pull` | Run `git pull --ff-only` first |
+| `--no-build` | Install the newest `gui/installer/Undo-Setup-*.exe` that is already built |
+| `--dev` | For a `uv tool install` development setup: reinstall with uv, restart the daemon, re-register autostart |
 
 ### Uninstalling
 
@@ -343,13 +373,39 @@ rm ~/myproject/undo-check.txt
 
 ### Updating
 
+One command pulls the new code, reinstalls `undo` and restarts the daemon:
+
+```sh
+bash ~/undo/scripts/update_linux.sh --pull
+```
+
+[`scripts/update_linux.sh`](../scripts/update_linux.sh) works for any user and any setup:
+
+* It finds the checkout it lives in, and finds uv in `PATH` or `~/.local/bin`.
+* It detects how the daemon runs: the systemd **user** service, the **system** service (using
+  `sudo` when you are not root), a plain `undo start`, or not running at all.
+* It stops the daemon, reinstalls with `--reinstall`, runs `undo init` to apply database
+  migrations and new default settings, restarts the daemon, and waits until it answers.
+* At the end it prints `undo status`, and warns if linger is off.
+
+Options:
+
+| Option | Effect |
+|---|---|
+| `--pull` | Run `git pull --ff-only` first. Without it, the script installs the code that is checked out now. |
+| `--editable` | Install in editable mode, so the installed `undo` follows the checkout |
+
+The same steps by hand:
+
 ```sh
 cd ~/undo
 git pull
+systemctl --user stop undo
 uv tool install --force --reinstall --python 3.12 ./cli --with ./backend
 undo --version
+undo init
 systemctl --user daemon-reload
-systemctl --user restart undo               # system service: sudo systemctl restart undo
+systemctl --user start undo                 # system service: sudo systemctl restart undo
 undo status
 ```
 
