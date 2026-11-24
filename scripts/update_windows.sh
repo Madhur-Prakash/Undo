@@ -102,14 +102,26 @@ find_iscc() {
 if [ "$BUILD" = 1 ]; then
   ISCC_EXE="$(find_iscc)" || fail "Inno Setup not found. Install Inno Setup 7, or set ISCC=/path/to/ISCC.exe"
   step "Building the installer (several minutes; logs in gui/installer/build/)"
+  ISS="$(cygpath -w "$REPO/gui/installer/Undo.iss")"
   ok=0
-  for attempt in 1 2 3; do
-    # An antivirus scan can briefly lock the new setup file ("EndUpdateResource failed"): retry.
-    if MSYS_NO_PATHCONV=1 "$ISCC_EXE" /Q "$(cygpath -w "$REPO/gui/installer/Undo.iss")"; then
+  # The first attempt builds everything. An antivirus scan of the new setup file can make the
+  # final step fail ("EndUpdateResource failed"); the retries then only repackage the builds
+  # just made (BuildApp=0), which takes seconds, after giving the scan time to finish.
+  build_flag=""
+  iscc_out="$REPO/gui/installer/build/iscc.log"
+  mkdir -p "$(dirname "$iscc_out")"
+  for attempt in 1 2 3 4 5; do
+    rm -f "$REPO"/gui/installer/Undo-Setup-*.exe 2>/dev/null || true
+    if MSYS_NO_PATHCONV=1 "$ISCC_EXE" /Q $build_flag "$ISS" 2>&1 | tee "$iscc_out"; [ "${PIPESTATUS[0]}" = 0 ]; then
       ok=1; break
     fi
-    echo "Build attempt $attempt failed; retrying in 5 seconds ..."
-    sleep 5
+    # Retry only the antivirus lock; any other error is a real build failure.
+    grep -q "EndUpdateResource\|Resource update error" "$iscc_out" || break
+    [ "$attempt" = 5 ] && break
+    wait_s=$((attempt * 10))
+    echo "Packaging attempt $attempt failed (antivirus lock?); repackaging in $wait_s seconds ..."
+    sleep "$wait_s"
+    build_flag="/DBuildApp=0"
   done
   [ "$ok" = 1 ] || fail "the installer did not build; read the log named above in gui/installer/build/"
 fi

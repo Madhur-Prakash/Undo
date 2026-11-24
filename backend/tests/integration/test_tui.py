@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 from helpers import write
-from textual.widgets import DataTable, TabbedContent
+from textual.widgets import Checkbox, DataTable, Select, TabbedContent
 from undo_cli.commands.common import State
 from undo_cli.tui.app import UndoTUI
 from undo_core.service import UndoService
@@ -20,6 +20,7 @@ def test_tui_tabs_and_file_history(service: UndoService, tracked: RootRef) -> No
     write(tracked.path / "hello.txt", "v1")
     service.scan()
     write(tracked.path / "hello.txt", "v2")
+    write(tracked.path / "big.txt", "x" * 100)
     service.scan()
     service.create_snapshot(name="tui-snap", root=tracked.id)
     data_dir = str(service.ctx.paths.data_dir)
@@ -40,7 +41,18 @@ def test_tui_tabs_and_file_history(service: UndoService, tracked: RootRef) -> No
             await pilot.press("3")
             await pilot.pause(0.6)
             files = app.query_one("#pane-files").query_one(DataTable)
-            assert files.row_count == 1
+            assert files.row_count == 2
+            assert files.get_row_at(0)[1].endswith("hello.txt")
+            app.query_one("#pane-files").query_one("#sort-key", Select).value = "size"
+            await pilot.pause(0.6)
+            assert files.get_row_at(0)[1].endswith("big.txt")  # largest first
+            app.query_one("#pane-files").query_one("#sort-reverse", Checkbox).value = True
+            await pilot.pause(0.6)
+            assert files.get_row_at(0)[1].endswith("hello.txt")
+            app.query_one("#pane-files").query_one("#sort-key", Select).value = "path"
+            await pilot.pause(0.6)
+            assert files.get_row_at(0)[1].endswith("hello.txt")  # Z to A: hello before big
+            files.move_cursor(row=0)
             files.focus()
             await pilot.press("enter")
             await pilot.pause(0.8)
@@ -51,6 +63,13 @@ def test_tui_tabs_and_file_history(service: UndoService, tracked: RootRef) -> No
             await pilot.pause(0.6)
             snaps = app.query_one("#pane-snapshots").query_one(DataTable)
             assert snaps.row_count == 1
+            await pilot.press("4")
+            await pilot.pause(0.6)
+            log = app.query_one("#pane-history").query_one(DataTable)
+            assert log.row_count == 3
+            app.query_one("#pane-history").query_one("#sort-key", Select).value = "path"
+            await pilot.pause(0.4)
+            assert log.get_row_at(0)[5].endswith("big.txt")
             await pilot.press("q")
 
     asyncio.run(scenario())

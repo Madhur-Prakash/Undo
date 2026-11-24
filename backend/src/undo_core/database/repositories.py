@@ -30,6 +30,15 @@ from undo_core.database.models import (
 from undo_core.platform.paths import path_key
 from undo_core.utils.timeutil import utcnow
 
+# Sort keys accepted by FileRepository.query (and GET /files?sort=...).
+FILE_SORT_COLUMNS = {
+    "path": File.path_key,
+    "size": File.last_size,
+    "modified": File.last_mtime_ns,
+    "version": File.latest_version_id,
+    "versions": File.version_count,
+}
+
 
 def _like_escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
@@ -127,6 +136,8 @@ class FileRepository:
         prefix: str | None,
         limit: int,
         offset: int,
+        sort: str = "path",
+        descending: bool = False,
     ) -> tuple[Sequence[File], int]:
         stmt = select(File)
         if root_id is not None:
@@ -141,9 +152,14 @@ class FileRepository:
             pattern = "%" + _like_escape(path_key(text_query)) + "%"
             stmt = stmt.where(File.path_key.like(pattern, escape="\\"))
         total = self.s.scalar(select(func.count()).select_from(stmt.subquery())) or 0
-        rows = self.s.scalars(
-            stmt.order_by(File.path_key, File.id).limit(limit).offset(offset)
-        ).all()
+        column = FILE_SORT_COLUMNS.get(sort, File.path_key)
+        primary = column.desc() if descending else column.asc()
+        # Files with no size or time yet go last whichever way the list is sorted.
+        order: list[Any] = [primary.nulls_last()] if column is not File.path_key else [primary]
+        if column is not File.path_key:
+            order.append(File.path_key)
+        order.append(File.id)
+        rows = self.s.scalars(stmt.order_by(*order).limit(limit).offset(offset)).all()
         return rows, total
 
     def search_history(self, text_query: str, limit: int) -> Sequence[tuple[File, PathHistory]]:

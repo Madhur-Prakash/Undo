@@ -159,6 +159,27 @@ def test_scan_with_unavailable_root_records_no_deletions(
     assert service.list_files().total == 1
 
 
+def test_list_files_sorting(service: UndoService, tracked: RootRef) -> None:
+    write(tracked.path / "b.txt", "xx")
+    write(tracked.path / "a.txt", "xxxxxx")
+    write(tracked.path / "c.txt", "x")
+    service.scan()
+    write(tracked.path / "c.txt", "xy")  # a second version for c.txt
+    service.scan()
+
+    def names(**kw: object) -> list[str]:
+        return [f.name for f in service.list_files(**kw).items]  # type: ignore[arg-type]
+
+    assert names() == ["a.txt", "b.txt", "c.txt"]
+    assert names(sort="path", descending=True) == ["c.txt", "b.txt", "a.txt"]
+    assert names(sort="size") == ["b.txt", "c.txt", "a.txt"]
+    assert names(sort="size", descending=True) == ["a.txt", "b.txt", "c.txt"]
+    assert names(sort="versions", descending=True)[0] == "c.txt"
+    assert names(sort="version", descending=True)[0] == "c.txt"
+    # Paging follows the sort order.
+    assert [f.name for f in service.list_files(sort="size", limit=1, offset=2).items] == ["a.txt"]
+
+
 def test_roots_management(service: UndoService, tracked: RootRef, tmp_path: Path) -> None:
     with pytest.raises(ConflictError):
         service.add_root(str(tracked.path))

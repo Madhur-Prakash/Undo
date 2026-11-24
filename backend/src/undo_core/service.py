@@ -330,6 +330,8 @@ class UndoService:
         prefix: str | None = None,
         limit: int = 200,
         offset: int = 0,
+        sort: str = "path",
+        descending: bool = False,
     ) -> FilePage:
         limit = max(1, min(limit, 5000))
         with self.db.read() as s:
@@ -342,6 +344,8 @@ class UndoService:
                 prefix=prefix,
                 limit=limit,
                 offset=max(0, offset),
+                sort=sort,
+                descending=descending,
             )
 
     def get_file(self, file_id: int) -> FileInfo:

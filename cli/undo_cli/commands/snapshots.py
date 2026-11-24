@@ -8,6 +8,7 @@ import typer
 from rich.table import Table
 from rich.text import Text
 
+from undo_cli import sorting
 from undo_cli.commands.common import EXIT_CONFLICT, call, resolve_root, session
 from undo_cli.output import render
 
@@ -50,11 +51,22 @@ def create(
 def list_cmd(
     ctx: typer.Context,
     root: str | None = typer.Option(None, "--root"),
+    sort: str = typer.Option(
+        "created", "--sort", "-s", help=sorting.choices(sorting.SNAPSHOT_SORTS)
+    ),
+    reverse: bool = typer.Option(
+        False, "--reverse", "-r", help="Flip the order (e.g. oldest first)"
+    ),
     json_out: bool = typer.Option(False, "--json"),
 ) -> None:
     """List snapshots."""
+    if sort not in sorting.SNAPSHOT_SORTS:
+        raise typer.BadParameter(
+            f"choose one of: {sorting.choices(sorting.SNAPSHOT_SORTS)}", param_hint="--sort"
+        )
     with session(ctx) as b:
         data = b.call("list_snapshots", root=resolve_root(b, root))
+    data = sorting.sort_rows(data, sorting.SNAPSHOT_SORTS, sort, reverse)
     if json_out:
         render.print_json(data)
     elif not data:

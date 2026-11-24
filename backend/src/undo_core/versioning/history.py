@@ -162,6 +162,8 @@ def list_files(
     prefix: str | None,
     limit: int,
     offset: int,
+    sort: str = "path",
+    descending: bool = False,
 ) -> FilePage:
     rows, total = FileRepository(session).query(
         root_id=root_id,
@@ -171,6 +173,8 @@ def list_files(
         prefix=prefix,
         limit=limit,
         offset=offset,
+        sort=sort,
+        descending=descending,
     )
     return FilePage(
         items=files_to_info(session, list(rows)), total=total, limit=limit, offset=offset

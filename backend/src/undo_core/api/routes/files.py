@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query
 
 from undo_core.api.dependencies import get_service
@@ -18,6 +20,8 @@ def list_files(
     prefix: str | None = None,
     limit: int = Query(200, ge=1, le=5000),
     offset: int = Query(0, ge=0),
+    sort: Literal["path", "size", "modified", "version", "versions"] = "path",
+    descending: bool = False,
     service: UndoService = Depends(get_service),
 ) -> FilePage:
     return service.list_files(
@@ -28,6 +32,8 @@ def list_files(
         prefix=prefix,
         limit=limit,
         offset=offset,
+        sort=sort,
+        descending=descending,
     )
 
 

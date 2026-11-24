@@ -2,14 +2,22 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
 
 import typer
 from rich.syntax import Syntax
 from rich.table import Table
 
+from undo_cli import sorting
 from undo_cli.commands.common import call, resolve_root, session
 from undo_cli.output import render
+
+
+def _check_sort(key: str, table: Mapping[str, object]) -> str:
+    if key not in table:
+        raise typer.BadParameter(f"choose one of: {sorting.choices(table)}", param_hint="--sort")
+    return key
 
 
 def _abs(path: str) -> str:
@@ -72,17 +80,60 @@ def register(app: typer.Typer) -> None:
         limit: int = typer.Option(50, "--limit", "-n"),
         since: str | None = typer.Option(None, "--since", help="ISO time or relative (2h, 3d)"),
         root: str | None = typer.Option(None, "--root"),
+        sort: str = typer.Option(
+            "time",
+            "--sort",
+            "-s",
+            help=f"{sorting.choices(sorting.ACTIVITY_SORTS)} (applies to the --limit newest events)",
+        ),
+        reverse: bool = typer.Option(
+            False, "--reverse", "-r", help="Flip the order (e.g. oldest first)"
+        ),
         json_out: bool = typer.Option(False, "--json"),
     ) -> None:
         """Recent changes across all tracked roots."""
+        _check_sort(sort, sorting.ACTIVITY_SORTS)
         with session(ctx) as b:
             data = b.call("activity", limit=limit, since=since, root_id=resolve_root(b, root))
+        data = sorting.sort_rows(data, sorting.ACTIVITY_SORTS, sort, reverse)
         if json_out:
             render.print_json(data)
         elif not data:
             render.console.print("No activity recorded yet.")
         else:
             render.console.print(render.activity_table(data))
+
+    @app.command()
+    def files(
+        ctx: typer.Context,
+        query: str | None = typer.Argument(None, help="Only paths containing this text"),
+        root: str | None = typer.Option(None, "--root"),
+        deleted: bool = typer.Option(False, "--deleted", "-d", help="Include deleted files"),
+        sort: str = typer.Option("path", "--sort", "-s", help=sorting.choices(sorting.FILE_SORTS)),
+        reverse: bool = typer.Option(
+            False, "--reverse", "-r", help="Flip the order (Z to A, smallest or oldest first)"
+        ),
+        limit: int = typer.Option(100, "--limit", "-n"),
+        json_out: bool = typer.Option(False, "--json"),
+    ) -> None:
+        """List tracked files, sorted by path, last modified, size or history."""
+        _check_sort(sort, sorting.FILE_SORTS)
+        with session(ctx) as b:
+            data = b.call(
+                "list_files",
+                query=query,
+                root_id=resolve_root(b, root),
+                include_deleted=deleted,
+                limit=limit,
+                **sorting.file_sort_args(sort, reverse),
+            )
+        if json_out:
+            render.print_json(data)
+        elif not data["items"]:
+            render.console.print("No tracked files match." if query else "No tracked files yet.")
+        else:
+            title = f"Files ({len(data['items'])} of {data['total']}, by {sorting.FILE_SORTS[sort][0].lower()})"
+            render.console.print(render.files_table(data["items"], title=title))
 
     @app.command()
     def search(

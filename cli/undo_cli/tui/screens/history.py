@@ -9,13 +9,14 @@ from textual import work
 from textual.app import ComposeResult
 from textual.containers import Vertical, VerticalScroll
 from textual.screen import ModalScreen, Screen
-from textual.widgets import DataTable, Footer, Header, Label, Static
+from textual.widgets import Checkbox, DataTable, Footer, Header, Label, Select, Static
 from undo_core.utils.errors import UndoError
 
+from undo_cli import sorting
 from undo_cli.output import render
 from undo_cli.output.render import short_hash, size, when
 from undo_cli.tui.screens.restore import RestoreModal
-from undo_cli.tui.widgets.common import DataPane
+from undo_cli.tui.widgets.common import DataPane, SortBar
 
 
 class ActivityPane(DataPane):
@@ -23,8 +24,9 @@ class ActivityPane(DataPane):
 
     def compose(self) -> ComposeResult:
         yield Label(
-            "[bold]History[/bold]  [dim]all recorded changes, newest first · Enter opens the file's history[/dim]"
+            "[bold]History[/bold]  [dim]the last 500 recorded changes · Enter opens the file's history[/dim]"
         )
+        yield SortBar(sorting.ACTIVITY_SORTS, "time", id="sortbar")
         yield DataTable(id="log", cursor_type="row", zebra_stripes=True)
 
     def on_mount(self) -> None:
@@ -37,9 +39,11 @@ class ActivityPane(DataPane):
         return self.backend.call("activity", limit=500)
 
     def show(self, versions: list[dict[str, Any]]) -> None:
+        self._rows = versions
+        bar = self.query_one("#sortbar", SortBar)
         table = self.query_one(DataTable)
         table.clear()
-        for v in versions:
+        for v in sorting.sort_rows(versions, sorting.ACTIVITY_SORTS, bar.key, bar.reverse):
             table.add_row(
                 when(v["timestamp"]),
                 v["operation"],
@@ -49,6 +53,16 @@ class ActivityPane(DataPane):
                 v["absolute_path"],
                 key=f"{v['file_id']}:{v['id']}",
             )
+
+    def _resort(self) -> None:
+        if hasattr(self, "_rows"):
+            self.show(self._rows)
+
+    def on_select_changed(self, _event: Select.Changed) -> None:
+        self._resort()
+
+    def on_checkbox_changed(self, _event: Checkbox.Changed) -> None:
+        self._resort()
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         if event.row_key.value:

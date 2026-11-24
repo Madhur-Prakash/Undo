@@ -6,11 +6,12 @@ from typing import Any
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal
-from textual.widgets import Checkbox, DataTable, Input, Label
+from textual.widgets import Checkbox, DataTable, Input, Label, Select
 
+from undo_cli import sorting
 from undo_cli.output.render import size, when
 from undo_cli.tui.screens.history import FileHistoryScreen
-from undo_cli.tui.widgets.common import DataPane
+from undo_cli.tui.widgets.common import DataPane, SortBar
 
 
 class FilesPane(DataPane):
@@ -25,6 +26,7 @@ class FilesPane(DataPane):
         with Horizontal():
             yield Input(placeholder="Search path ...", id="q")
             yield Checkbox("Include deleted", id="deleted")
+            yield SortBar(sorting.FILE_SORTS, "path", id="sortbar")
         yield DataTable(id="files", cursor_type="row", zebra_stripes=True)
         yield Label("", id="count", classes="pane-status")
 
@@ -37,7 +39,14 @@ class FilesPane(DataPane):
     def fetch(self) -> Any:
         q = self.query_one("#q", Input).value.strip() or None
         include_deleted = self.query_one("#deleted", Checkbox).value
-        return self.backend.call("list_files", query=q, include_deleted=include_deleted, limit=500)
+        bar = self.query_one("#sortbar", SortBar)
+        return self.backend.call(
+            "list_files",
+            query=q,
+            include_deleted=include_deleted,
+            limit=500,
+            **sorting.file_sort_args(bar.key, bar.reverse),
+        )
 
     def show(self, page: dict[str, Any]) -> None:
         table = self.query_one(DataTable)
@@ -59,6 +68,9 @@ class FilesPane(DataPane):
         self.reload()
 
     def on_checkbox_changed(self, _event: Checkbox.Changed) -> None:
+        self.reload()
+
+    def on_select_changed(self, _event: Select.Changed) -> None:
         self.reload()
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:

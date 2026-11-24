@@ -8,13 +8,14 @@ from rich.text import Text
 from textual import work
 from textual.app import ComposeResult
 from textual.containers import Horizontal
-from textual.widgets import Button, DataTable, Label
+from textual.widgets import Button, Checkbox, DataTable, Label, Select
 from undo_core.utils.errors import UndoError
 
+from undo_cli import sorting
 from undo_cli.output.render import size, when
 from undo_cli.tui.screens.history import TextModal
 from undo_cli.tui.screens.restore import RestoreModal
-from undo_cli.tui.widgets.common import ConfirmModal, DataPane, PromptModal
+from undo_cli.tui.widgets.common import ConfirmModal, DataPane, PromptModal, SortBar
 
 
 class SnapshotsPane(DataPane):
@@ -38,6 +39,7 @@ class SnapshotsPane(DataPane):
             yield Button("Compare", id="diff")
             yield Button("Restore", id="restore", variant="warning")
             yield Button("Delete", id="delete", variant="error")
+            yield SortBar(sorting.SNAPSHOT_SORTS, "created", id="sortbar")
         yield DataTable(id="snaps", cursor_type="row", zebra_stripes=True)
 
     def on_mount(self) -> None:
@@ -50,10 +52,12 @@ class SnapshotsPane(DataPane):
         return self.backend.call("list_snapshots")
 
     def show(self, snaps: list[dict[str, Any]]) -> None:
+        self._rows = snaps
         self._snaps = {str(s["id"]): s for s in snaps}
+        bar = self.query_one("#sortbar", SortBar)
         table = self.query_one(DataTable)
         table.clear()
-        for s in snaps:
+        for s in sorting.sort_rows(snaps, sorting.SNAPSHOT_SORTS, bar.key, bar.reverse):
             table.add_row(
                 str(s["id"]),
                 s["name"],
@@ -72,6 +76,16 @@ class SnapshotsPane(DataPane):
         return getattr(self, "_snaps", {}).get(
             table.coordinate_to_cell_key(table.cursor_coordinate).row_key.value
         )
+
+    def _resort(self) -> None:
+        if hasattr(self, "_rows"):
+            self.show(self._rows)
+
+    def on_select_changed(self, _event: Select.Changed) -> None:
+        self._resort()
+
+    def on_checkbox_changed(self, _event: Checkbox.Changed) -> None:
+        self._resort()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         getattr(self, f"action_{event.button.id}", lambda: None)()

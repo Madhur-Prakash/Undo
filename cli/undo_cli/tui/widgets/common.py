@@ -8,7 +8,7 @@ from textual import work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Input, Label, Static
+from textual.widgets import Button, Checkbox, Input, Label, Select, Static
 from undo_core.utils.errors import UndoError
 
 
@@ -33,6 +33,36 @@ class StatCard(Static):
             f"[dim]{self.title}[/dim]\n[bold]{value}[/bold]"
             + (f"\n[dim]{note}[/dim]" if note else "")
         )
+
+
+class SortBar(Horizontal):
+    """A sort-key dropdown and a Reverse checkbox (see undo_cli.sorting)."""
+
+    DEFAULT_CSS = """
+    SortBar { height: 3; width: auto; }
+    SortBar Label { padding: 1 1 0 1; }
+    SortBar Select { width: 28; }
+    """
+
+    def __init__(
+        self, table: dict[str, tuple[Any, ...]], default: str, *, id: str | None = None
+    ) -> None:
+        super().__init__(id=id)
+        self._options = [(entry[0], key) for key, entry in table.items()]
+        self._default = default
+
+    def compose(self) -> ComposeResult:
+        yield Label("Sort")
+        yield Select(self._options, value=self._default, allow_blank=False, id="sort-key")
+        yield Checkbox("Reverse", id="sort-reverse")
+
+    @property
+    def key(self) -> str:
+        return str(self.query_one("#sort-key", Select).value)
+
+    @property
+    def reverse(self) -> bool:
+        return self.query_one("#sort-reverse", Checkbox).value
 
 
 class DataPane(Vertical):

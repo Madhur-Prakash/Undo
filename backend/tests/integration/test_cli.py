@@ -111,3 +111,35 @@ def test_full_cli_flow(cli, tmp_path: Path) -> None:  # type: ignore[no-untyped-
     cli("untrack", str(work))
     assert not _json(cli("roots", "--json"))[0]["enabled"]  # type: ignore[index]
     assert "undo" in cli("--version").output
+
+
+def test_cli_sorting(cli, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    work = tmp_path / "work"
+    write(work / "b.txt", "xx")
+    write(work / "a.txt", "xxxxxx")
+    write(work / "c.txt", "x")
+    cli("init")
+    cli("settings", "set", "capture.stable_seconds", "0")
+    cli("track", str(work))
+
+    def names(*args: str) -> list[str]:
+        page = _json(cli("files", *args, "--json"))
+        return [f["name"] for f in page["items"]]  # type: ignore[index]
+
+    assert names() == ["a.txt", "b.txt", "c.txt"]
+    assert names("--reverse") == ["c.txt", "b.txt", "a.txt"]
+    assert names("--sort", "size") == ["a.txt", "b.txt", "c.txt"]  # largest first
+    assert names("--sort", "size", "-r") == ["c.txt", "b.txt", "a.txt"]
+    assert cli("files", "--sort", "nope", ok=False).exit_code != 0
+
+    log = _json(cli("log", "--sort", "path", "--json"))
+    assert [v["relative_path"] for v in log] == ["a.txt", "b.txt", "c.txt"]  # type: ignore[union-attr,index]
+    log = _json(cli("log", "--sort", "size", "--json"))
+    assert log[0]["relative_path"] == "a.txt"  # type: ignore[index]
+
+    cli("snapshot", "create", "--name", "zeta")
+    cli("snapshot", "create", "--name", "alpha")
+    snaps = _json(cli("snapshot", "list", "--sort", "name", "--json"))
+    assert [s["name"] for s in snaps] == ["alpha", "zeta"]  # type: ignore[union-attr,index]
+    snaps = _json(cli("snapshot", "list", "--json"))
+    assert snaps[0]["name"] == "alpha"  # newest first  # type: ignore[index]
