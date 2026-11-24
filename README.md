@@ -32,7 +32,7 @@ Every version of every file in the folders you choose, kept automatically.</p>
   <a href="#quick-start">Quick start</a> &middot;
   <a href="docs/CLI.md">CLI reference</a> &middot;
   <a href="gui/undo_desktop/README.md">Desktop app</a> &middot;
-  <a href="#documentation">Documentation</a> &middot;
+  <a href="docs/README.md">Documentation</a> &middot;
   <a href="CHANGELOG.md">Changelog</a> &middot;
   <a href="https://github.com/Madhur-Prakash/Undo/issues">Report an issue</a>
 </p>
@@ -259,6 +259,8 @@ Guarantees and failure handling: [docs/RECOVERY.md](docs/RECOVERY.md).
 
 ## Documentation
 
+Start at the **[documentation index](docs/README.md)**, which says where to look for each task.
+
 | Document | Contents |
 |---|---|
 | [docs/INSTALLATION.md](docs/INSTALLATION.md) | Windows installer, Linux server, Linux desktop, from source; services, upgrading, uninstalling, building the installer |
@@ -268,6 +270,7 @@ Guarantees and failure handling: [docs/RECOVERY.md](docs/RECOVERY.md).
 | [docs/STORAGE.md](docs/STORAGE.md) | Content-addressed storage, compression, deduplication, integrity and garbage collection |
 | [docs/API.md](docs/API.md) | The local HTTP API ([OpenAPI schema](docs/API_OPENAPI.json)) |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common problems and their fixes |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Dev setup, running each part, tests and checks, trying changes on a real install, releasing |
 | [gui/undo_desktop/README.md](gui/undo_desktop/README.md) | The desktop app: screens, how it finds the daemon, building it, code layout |
 | [gui/installer/Undo.iss](gui/installer/Undo.iss) | The Windows installer script (Inno Setup 7); comments at the top explain the build |
 | [CHANGELOG.md](CHANGELOG.md) | Changes in each version |
@@ -276,11 +279,21 @@ Guarantees and failure handling: [docs/RECOVERY.md](docs/RECOVERY.md).
 ## Development
 
 ```sh
-make init       # or ./make.sh init
+make init       # or ./make.sh init: uv sync, a separate .dev-home/ data directory, flutter pub get
+make backend    # run the daemon in the foreground against .dev-home/
 make test       # unit + integration (make test-stress for stress tests)
 make lint typecheck
-make build      # wheels, desktop bundle, portable archive in dist/
 ```
+
+To try your changes on a **real installation** (the installer build on Windows, the systemd
+service on a server), install the checked-out code with the update scripts:
+
+```sh
+bash scripts/update_windows.sh      # Windows (Git Bash): build the installer from this checkout and install it
+bash scripts/update_linux.sh        # Linux: reinstall from this checkout and restart the daemon
+```
+
+Full guide: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
 
 | Script | Purpose |
 |---|---|

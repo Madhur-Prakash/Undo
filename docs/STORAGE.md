@@ -1,5 +1,10 @@
 # Storage
 
+> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · [CLI](CLI.md) · [Recovery](RECOVERY.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · **Storage** · [API](API.md)
+
+What is inside the data directory and how file contents are stored, deduplicated, kept and
+verified.
+
 ## Data directory layout
 
 Default location: `%LOCALAPPDATA%\Undo` (Windows), `$XDG_DATA_HOME/undo` or `~/.local/share/undo`
@@ -21,7 +26,12 @@ undo-data/
 ```
 
 The data directory is always excluded from monitoring, even if it lies inside a tracked folder.
-Tracking the data directory itself, or a folder inside it, is refused.
+Tracking the data directory itself, or a folder inside it, is refused; installed builds also
+refuse Undo's program folder.
+
+Removing history (`undo untrack --purge`, retention) deletes database rows. The space is only
+freed by [garbage collection](#garbage-collection), so *stored* in `undo status` can stay high
+until `undo storage gc` (or the daemon's daily `gc` job) runs.
 
 ## Hashing
 
@@ -123,3 +133,7 @@ staging files are removed under the same rules. Dry run reports exactly what wou
 existence), marks missing or corrupt objects in the database, runs `PRAGMA quick_check` and
 `foreign_key_check`, lists orphan files and repairs damaged blobs from live files whose current
 content still has the same hash.
+
+---
+
+Related: [Architecture](ARCHITECTURE.md) · [Recovery](RECOVERY.md) · [Troubleshooting › Storage](TROUBLESHOOTING.md#storage-and-disk-space)

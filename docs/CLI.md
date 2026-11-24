@@ -1,5 +1,10 @@
 # CLI reference
 
+> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · **CLI** · [Recovery](RECOVERY.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · [API](API.md)
+
+Every `undo` command, option and setting. For step-by-step recipes see
+[Recovery](RECOVERY.md); for first-time setup see [Installation](INSTALLATION.md).
+
 `undo [--data-dir DIR] [--local] COMMAND ...`
 
 * `--data-dir` (env `UNDO_HOME`) selects the data directory.
@@ -36,7 +41,7 @@
 
 | Command | Description |
 |---|---|
-| `undo track PATH [--no-scan]` | Track a folder. Nested/overlapping roots and the data directory are refused. |
+| `undo track PATH [--no-scan]` | Track a folder and everything below it. Relative paths such as `.` are resolved first. Overlapping roots, the data directory and (installed builds) Undo's program folder are refused. With a daemon running the first scan happens in the background; without one it runs in the terminal (`--no-scan` skips it). |
 | `undo untrack PATH\|ID [--purge] [-y]` | Stop monitoring; history kept. `--purge` deletes the root's history (data reclaimed by `gc`). |
 | `undo roots` | List roots with file/version counts, last scan and monitoring mode. |
 | `undo scan [PATH\|ID] [--deep]` | Reconcile now (all roots, one root, or a sub-directory). `--deep` re-hashes every file. |
@@ -54,7 +59,6 @@
 | `undo service install [--system]` | Autostart. Linux: systemd user unit (`--system` as root for a system unit). Windows: starts the daemon at sign-in through the per-user Run key (value `Undo`; no admin needed), and starts it now. |
 | `undo service status` | Whether autostart is installed. Windows: the registered command. Linux: `systemctl --user is-enabled undo`. |
 | `undo service uninstall [--system]` | Removes autostart. A running daemon keeps running until `undo stop`. |
-| `undo service uninstall [--system]` / `undo service status` | Remove / inspect autostart. |
 
 ## History
 
@@ -140,8 +144,18 @@
 
 ## Terminal UI
 
-`undo tui`: tabs Dashboard, Roots, Files, History, Snapshots, Storage, Settings (keys `1`–`7`).
-`F5`/`Ctrl+R` refresh, `q` quit. Roots: `a` add, `s` scan, `e` enable/disable, `x` untrack. Files:
-type to search, `Enter` opens history (`r` restore, `d` diff with previous, `v` view, `i` details,
-`Esc` back). Snapshots: `c` create, `d` compare, `r` restore, `x` delete. Restores always show a
-preview first and need an explicit "Overwrite" tick to replace files.
+`undo tui` opens a full-screen dashboard; it works over SSH.
+
+| Where | Keys |
+|---|---|
+| Everywhere | `1`–`7` switch tabs (Dashboard, Roots, Files, History, Snapshots, Storage, Settings) · `F5` / `Ctrl+R` refresh · `q` quit |
+| Roots | `a` add · `s` scan · `e` enable/disable · `x` untrack |
+| Files | type to search · tick *Include deleted* · `Enter` opens the file's history |
+| File history | `v` view content · `d` diff with previous · `i` details · `r` restore · `Esc` back |
+| Snapshots | `c` create · `d` compare · `r` restore · `x` delete |
+
+Restores always show a **Preview** first, and replacing existing files needs the *Overwrite* tick.
+
+---
+
+Related: [Recovery](RECOVERY.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Local API](API.md)

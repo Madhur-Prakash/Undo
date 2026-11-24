@@ -1,5 +1,10 @@
 # Local API (v1)
 
+> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · [CLI](CLI.md) · [Recovery](RECOVERY.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · **API**
+
+The JSON API the daemon serves for the CLI, the dashboard and the app. Use it from your own
+scripts on the same machine.
+
 The daemon serves a JSON API at `http://127.0.0.1:<port>/api/v1` (default port 47821; if busy a
 random port is used). The actual address is in `<data>/daemon.json`.
 
@@ -12,8 +17,15 @@ random port is used). The actual address is in `<data>/daemon.json`.
   401 `unauthorized`, 404 `not_found`, 409 `conflict` / `not_initialized`, 422 `invalid_input` /
   `path_outside_root` / `unsafe_path`, 423 `locked`, 500 `storage_integrity` / `internal_error`.
 * **Schemas:** request bodies are in `undo_core/api/schemas`, responses are the models in
-  `undo_core/domain.py`. Interactive docs: `GET /api/v1/docs` (with the token);
-  `make docs` writes the OpenAPI document to `docs/API_OPENAPI.json`.
+  `undo_core/domain.py`. `make docs` writes the OpenAPI document to
+  [API_OPENAPI.json](API_OPENAPI.json).
+* **Interactive docs:** open `http://127.0.0.1:47821/api/v1/docs` in a browser, click
+  **Authorize**, paste the token (without `Bearer`) and use *Try it out*. Requests really run:
+  keep `dry_run: true` on restores until you mean it. `http://127.0.0.1:47821/` itself returns
+  `{"detail":"Not Found"}`, because there is no page at the root.
+* **Token:** `cat ~/.local/share/undo/api_token` (Linux) or
+  `Get-Content $env:LOCALAPPDATA\Undo\api_token` (PowerShell). Created by `undo init`, never
+  expires. To replace it, delete the file and run `undo restart`.
 
 ## Endpoints
 
@@ -70,3 +82,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:$PORT/api/v1/status
 curl -s -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
      -d '{"path":"/home/me/notes.txt","at":"2h","dry_run":true}' http://127.0.0.1:$PORT/api/v1/restore
 ```
+
+---
+
+Related: [Architecture › Communication](ARCHITECTURE.md#communication) · [CLI reference](CLI.md) · [OpenAPI schema](API_OPENAPI.json)

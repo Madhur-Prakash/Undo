@@ -1,5 +1,7 @@
 # Installation
 
+> **Undo docs** · [Index](README.md) · **Installation** · [CLI](CLI.md) · [Recovery](RECOVERY.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · [API](API.md)
+
 Pick the section for your machine:
 
 | Machine | How | You need |
@@ -26,6 +28,15 @@ Set `UNDO_HOME` (or pass `--data-dir`) to use another directory. The desktop app
 * Not yet run: the Linux desktop app and release archive.
 
 Before you track anything, read [Choosing what to track](#choosing-what-to-track).
+
+**On this page:**
+
+* [Choosing what to track](#choosing-what-to-track)
+* [Windows](#windows): [install](#1-install) · [check](#2-check-the-installation) · [track](#3-track-folders) · [start at sign-in](#starting-at-sign-in) · [update](#updating) · [uninstall](#uninstalling) · [build the installer](#building-the-installer)
+* [Linux server](#linux-server): [steps 1–7](#1-install-uv) · [update](#updating-1) · [stop and logs](#stopping-restarting-logs) · [fix a wrong folder](#fixing-a-wrong-folder) · [remove](#removing-undo)
+* [Linux desktop](#linux-desktop)
+* [From source](#from-source-development)
+* [Using Undo](#using-undo-any-platform)
 
 ---
 
@@ -522,7 +533,10 @@ with Flutter.
 * **Linux:** it installs the systemd user unit.
 
 Do not run a development daemon and an installed one against the same data directory. Only one
-daemon can own it at a time.
+daemon can own it at a time. The `make` targets avoid this by using `.dev-home/`.
+
+The full development workflow, including tests and trying changes on a real install with the
+update scripts, is in [Development](DEVELOPMENT.md).
 
 The app uses no Flutter plugins. Its folder picker is native code in
 `gui/undo_desktop/windows/runner/flutter_window.cpp`, so Windows Developer Mode is not needed.
@@ -559,3 +573,7 @@ In `undo tui`:
 
 Every command and option: [CLI.md](CLI.md). Getting files back in common situations:
 [RECOVERY.md](RECOVERY.md). Problems: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
+---
+
+Related: [CLI reference](CLI.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md)

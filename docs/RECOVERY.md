@@ -1,5 +1,21 @@
 # Recovery
 
+> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · [CLI](CLI.md) · **Recovery** · [Troubleshooting](TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · [API](API.md)
+
+Getting files back, and exactly what Undo promises when it writes them. Command details are in
+the [CLI reference](CLI.md#restoration); the dashboard way is in
+[CLI › Terminal UI](CLI.md#terminal-ui).
+
+## A typical restore
+
+```sh
+undo history ~/project/config.yml                 # find the version (first column is its id)
+undo cat 42                                       # look at it
+undo diff 41 42                                   # what changed
+undo restore ~/project/config.yml --version 42 --dry-run
+undo restore ~/project/config.yml --version 42 --overwrite
+```
+
 ## What can be restored
 
 | Situation | Command |
@@ -93,3 +109,7 @@ To improve your chances:
 3. Periodically copy the data directory to protected storage (with the daemon stopped, or after
    `undo snapshot create`): it is self-contained (`undo.db` plus `blobs/`).
 4. Take a named snapshot before risky operations; snapshots are exempt from retention.
+
+---
+
+Related: [CLI reference](CLI.md) · [Storage](STORAGE.md) · [Troubleshooting › Restoring](TROUBLESHOOTING.md#restoring)

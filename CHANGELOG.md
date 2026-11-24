@@ -17,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   (optionally `--pull` first) and restart the daemon, whichever way it runs (systemd user or
   system service, plain `undo start`; on Windows by building and silently running the
   installer).
+- Documentation: a docs index (`docs/README.md`) and a development guide (`docs/DEVELOPMENT.md`,
+  including how to try changes on a real install with the update scripts). The same navigation
+  bar and related links are now on every page. Troubleshooting is regrouped by area and covers
+  the problems seen in real installs.
 - New app icon: a bold counter-clockwise arrow ring with a violet-to-blue gradient on a light
   squircle tile.
 - `exclusions.defaults_version`: existing installs receive defaults added by newer versions once,

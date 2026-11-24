@@ -68,3 +68,7 @@ It bundles this app with the backend (`undo.exe`, `undo-daemon.exe`) into one se
 | `linux/` | Native Linux host |
 | `assets/undo.png` | Sidebar logo (the app icon, 256 px) |
 | `test/` | Unit tests for models and formatting |
+
+---
+
+More: [Documentation index](../../docs/README.md) · [Installation](../../docs/INSTALLATION.md) · [Development](../../docs/DEVELOPMENT.md) · [Architecture](../../docs/ARCHITECTURE.md) · [Troubleshooting › Desktop app](../../docs/TROUBLESHOOTING.md#desktop-app)
