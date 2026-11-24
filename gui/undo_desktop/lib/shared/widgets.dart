@@ -28,8 +28,15 @@ class AsyncView<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return value.when(
       skipLoadingOnRefresh: true,
-      data: (data) => (isEmpty?.call(data) ?? false) && empty != null ? empty! : builder(data),
-      loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
+      data: (data) => (isEmpty?.call(data) ?? false) && empty != null
+          ? empty!
+          : builder(data),
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      ),
       error: (e, _) => ErrorView(message: e.toString(), onRetry: onRetry),
     );
   }
@@ -46,22 +53,35 @@ class ErrorView extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.error_outline, color: scheme.error, size: 36),
-          const SizedBox(height: 12),
-          SelectableText(message, textAlign: TextAlign.center),
-          if (onRetry != null) ...[
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, color: scheme.error, size: 36),
             const SizedBox(height: 12),
-            OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Retry')),
+            SelectableText(message, textAlign: TextAlign.center),
+            if (onRetry != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
           ],
-        ]),
+        ),
       ),
     );
   }
 }
 
 class EmptyState extends StatelessWidget {
-  const EmptyState({super.key, required this.icon, required this.title, this.message, this.action});
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.message,
+    this.action,
+  });
   final IconData icon;
   final String title;
   final String? message;
@@ -73,23 +93,35 @@ class EmptyState extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 40, color: theme.colorScheme.outline),
-          const SizedBox(height: 12),
-          Text(title, style: theme.textTheme.titleMedium),
-          if (message != null) ...[
-            const SizedBox(height: 6),
-            Text(message!, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 40, color: theme.colorScheme.outline),
+            const SizedBox(height: 12),
+            Text(title, style: theme.textTheme.titleMedium),
+            if (message != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                message!,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+            if (action != null) ...[const SizedBox(height: 16), action!],
           ],
-          if (action != null) ...[const SizedBox(height: 16), action!],
-        ]),
+        ),
       ),
     );
   }
 }
 
 class PageHeader extends StatelessWidget {
-  const PageHeader({super.key, required this.title, this.subtitle, this.actions = const []});
+  const PageHeader({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.actions = const [],
+  });
   final String title;
   final String? subtitle;
   final List<Widget> actions;
@@ -99,22 +131,39 @@ class PageHeader extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-      child: Row(children: [
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: theme.textTheme.headlineSmall),
-            if (subtitle != null)
-              Text(subtitle!, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          ]),
-        ),
-        ...actions.expand((w) => [w, const SizedBox(width: 8)]),
-      ]),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: theme.textTheme.headlineSmall),
+                if (subtitle != null)
+                  Text(
+                    subtitle!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          ...actions.expand((w) => [w, const SizedBox(width: 8)]),
+        ],
+      ),
     );
   }
 }
 
 class StatCard extends StatelessWidget {
-  const StatCard({super.key, required this.label, required this.value, this.note, this.icon, this.color});
+  const StatCard({
+    super.key,
+    required this.label,
+    required this.value,
+    this.note,
+    this.icon,
+    this.color,
+  });
   final String label;
   final String value;
   final String? note;
@@ -127,26 +176,52 @@ class StatCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Row(children: [
-            if (icon != null) ...[Icon(icon, size: 18, color: color ?? theme.colorScheme.primary), const SizedBox(width: 8)],
-            Expanded(
-              child: Text(label,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: color ?? theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ]),
-          const SizedBox(height: 8),
-          Text(value, style: theme.textTheme.headlineSmall?.copyWith(color: color)),
-          if (note != null) Text(note!, style: theme.textTheme.bodySmall),
-        ]),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: theme.textTheme.headlineSmall?.copyWith(color: color),
+            ),
+            if (note != null) Text(note!, style: theme.textTheme.bodySmall),
+          ],
+        ),
       ),
     );
   }
 }
 
 class SectionCard extends StatelessWidget {
-  const SectionCard({super.key, required this.title, required this.child, this.trailing, this.padding = const EdgeInsets.all(16)});
+  const SectionCard({
+    super.key,
+    required this.title,
+    required this.child,
+    this.trailing,
+    this.padding = const EdgeInsets.all(16),
+  });
   final String title;
   final Widget child;
   final Widget? trailing;
@@ -155,17 +230,27 @@ class SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-          child: Row(children: [
-            Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
-            ?trailing,
-          ]),
-        ),
-        const Divider(),
-        Padding(padding: padding, child: child),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                ?trailing,
+              ],
+            ),
+          ),
+          const Divider(),
+          Padding(padding: padding, child: child),
+        ],
+      ),
     );
   }
 }
@@ -184,7 +269,91 @@ class OperationChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
-      child: Text(operation, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+      child: Text(
+        operation,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+/// One way to sort a list. [descendingFirst] is the natural direction picked when the
+/// option is chosen: names A to Z, times newest first, sizes and counts largest first.
+/// The keys match the CLI's `--sort` values (cli/undo_cli/sorting.py).
+class SortOption {
+  const SortOption(
+    this.key,
+    this.label, {
+    this.descendingFirst = false,
+    this.ascendingHint = 'ascending',
+    this.descendingHint = 'descending',
+  });
+  final String key;
+  final String label;
+  final bool descendingFirst;
+  final String ascendingHint;
+  final String descendingHint;
+}
+
+/// The chosen sort: an option key and a direction.
+typedef SortState = ({String key, bool descending});
+
+/// A "Sort by" dropdown and a button that flips the direction.
+class SortControl extends StatelessWidget {
+  const SortControl({
+    super.key,
+    required this.options,
+    required this.value,
+    required this.onChanged,
+  });
+  final List<SortOption> options;
+  final SortState value;
+  final ValueChanged<SortState> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = options.firstWhere(
+      (o) => o.key == value.key,
+      orElse: () => options.first,
+    );
+    final hint = value.descending
+        ? current.descendingHint
+        : current.ascendingHint;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.sort,
+          size: 20,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+        DropdownButton<String>(
+          value: current.key,
+          items: [
+            for (final o in options)
+              DropdownMenuItem(value: o.key, child: Text(o.label)),
+          ],
+          onChanged: (k) {
+            if (k == null) return;
+            final o = options.firstWhere((o) => o.key == k);
+            onChanged((key: k, descending: o.descendingFirst));
+          },
+        ),
+        IconButton(
+          tooltip: 'Sorted $hint; click to reverse',
+          icon: Icon(
+            value.descending ? Icons.arrow_downward : Icons.arrow_upward,
+            size: 20,
+          ),
+          onPressed: () =>
+              onChanged((key: value.key, descending: !value.descending)),
+        ),
+      ],
     );
   }
 }
@@ -196,23 +365,38 @@ class StatusDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: ok ? Colors.green.shade500 : Colors.orange.shade600),
-      );
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: ok ? Colors.green.shade500 : Colors.orange.shade600,
+    ),
+  );
 }
 
-Future<bool> confirmDialog(BuildContext context,
-    {required String title, required String message, String confirm = 'Confirm', bool destructive = false}) async {
+Future<bool> confirmDialog(
+  BuildContext context, {
+  required String title,
+  required String message,
+  String confirm = 'Confirm',
+  bool destructive = false,
+}) async {
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(title),
       content: Text(message),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
         FilledButton(
-          style: destructive ? FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error) : null,
+          style: destructive
+              ? FilledButton.styleFrom(
+                  backgroundColor: Theme.of(ctx).colorScheme.error,
+                )
+              : null,
           onPressed: () => Navigator.pop(ctx, true),
           child: Text(confirm),
         ),
@@ -224,16 +408,22 @@ Future<bool> confirmDialog(BuildContext context,
 
 void showMessage(BuildContext context, String message, {bool error = false}) {
   final scheme = Theme.of(context).colorScheme;
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    content: Text(message),
-    backgroundColor: error ? scheme.error : null,
-    behavior: SnackBarBehavior.floating,
-    width: 520,
-  ));
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor: error ? scheme.error : null,
+      behavior: SnackBarBehavior.floating,
+      width: 520,
+    ),
+  );
 }
 
 /// Runs an async backend action with success/error feedback.
-Future<T?> runAction<T>(BuildContext context, Future<T> Function() action, {String? success}) async {
+Future<T?> runAction<T>(
+  BuildContext context,
+  Future<T> Function() action, {
+  String? success,
+}) async {
   try {
     final result = await action();
     if (context.mounted && success != null) showMessage(context, success);
@@ -256,7 +446,13 @@ Future<String?> pickFolder(String title) async {
   }
   final tools = <List<String>>[
     ['zenity', '--file-selection', '--directory', '--title=$title'],
-    ['kdialog', '--getexistingdirectory', Platform.environment['HOME'] ?? '/', '--title', title],
+    [
+      'kdialog',
+      '--getexistingdirectory',
+      Platform.environment['HOME'] ?? '/',
+      '--title',
+      title,
+    ],
   ];
   for (final cmd in tools) {
     try {
@@ -267,5 +463,7 @@ Future<String?> pickFolder(String title) async {
       continue; // not installed: try the next one
     }
   }
-  throw Exception('No folder picker found: install zenity or kdialog, or type the path.');
+  throw Exception(
+    'No folder picker found: install zenity or kdialog, or type the path.',
+  );
 }

@@ -16,48 +16,79 @@ class OverviewPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(statusProvider);
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      PageHeader(
-        title: 'Overview',
-        subtitle: 'What Undo is protecting right now',
-        actions: [
-          FilledButton.icon(onPressed: () => _addRoot(context, ref), icon: const Icon(Icons.add), label: const Text('Track folder')),
-          IconButton(tooltip: 'Refresh', onPressed: () => refreshAll(ref), icon: const Icon(Icons.refresh)),
-        ],
-      ),
-      Expanded(
-        child: AsyncView<StatusInfo>(
-          value: status,
-          onRetry: () => ref.invalidate(statusProvider),
-          builder: (s) => ListView(padding: const EdgeInsets.fromLTRB(24, 0, 24, 24), children: [
-            _StatsGrid(status: s),
-            const SizedBox(height: 16),
-            if (s.daemon != null) _DaemonCard(health: s.daemon!),
-            const SizedBox(height: 16),
-            const _RootsCard(),
-            const SizedBox(height: 16),
-            LayoutBuilder(builder: (context, c) {
-              final children = [const _RecentChanges(), const _RecentSnapshots()];
-              if (c.maxWidth < 1000) {
-                return Column(children: [children[0], const SizedBox(height: 16), children[1]]);
-              }
-              return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(flex: 3, child: children[0]),
-                const SizedBox(width: 16),
-                Expanded(flex: 2, child: children[1]),
-              ]);
-            }),
-          ]),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PageHeader(
+          title: 'Overview',
+          subtitle: 'What Undo is protecting right now',
+          actions: [
+            FilledButton.icon(
+              onPressed: () => _addRoot(context, ref),
+              icon: const Icon(Icons.add),
+              label: const Text('Track folder'),
+            ),
+            IconButton(
+              tooltip: 'Refresh',
+              onPressed: () => refreshAll(ref),
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
         ),
-      ),
-    ]);
+        Expanded(
+          child: AsyncView<StatusInfo>(
+            value: status,
+            onRetry: () => ref.invalidate(statusProvider),
+            builder: (s) => ListView(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              children: [
+                _StatsGrid(status: s),
+                const SizedBox(height: 16),
+                if (s.daemon != null) _DaemonCard(health: s.daemon!),
+                const SizedBox(height: 16),
+                const _RootsCard(),
+                const SizedBox(height: 16),
+                LayoutBuilder(
+                  builder: (context, c) {
+                    final children = [
+                      const _RecentChanges(),
+                      const _RecentSnapshots(),
+                    ];
+                    if (c.maxWidth < 1000) {
+                      return Column(
+                        children: [
+                          children[0],
+                          const SizedBox(height: 16),
+                          children[1],
+                        ],
+                      );
+                    }
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 3, child: children[0]),
+                        const SizedBox(width: 16),
+                        Expanded(flex: 2, child: children[1]),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   static Future<void> _addRoot(BuildContext context, WidgetRef ref) async {
     final dir = await pickFolder('Choose a folder to track');
     if (dir == null || !context.mounted) return;
-    final root = await runAction(context, () => ref.read(apiProvider).addRoot(dir),
-        success: 'Tracking $dir — the initial scan runs in the background');
+    final root = await runAction(
+      context,
+      () => ref.read(apiProvider).addRoot(dir),
+      success: 'Tracking $dir — the initial scan runs in the background',
+    );
     if (root != null) refreshAll(ref);
   }
 }
@@ -73,15 +104,41 @@ class _StatsGrid extends StatelessWidget {
       StatCard(
         label: 'Daemon',
         value: status.daemonRunning ? 'Running' : 'Stopped',
-        note: status.daemon != null ? 'up ${formatDuration(status.daemon!.uptimeSeconds)}' : null,
+        note: status.daemon != null
+            ? 'up ${formatDuration(status.daemon!.uptimeSeconds)}'
+            : null,
         icon: Icons.monitor_heart_outlined,
-        color: status.daemonRunning ? Colors.green.shade600 : Colors.orange.shade700,
+        color: status.daemonRunning
+            ? Colors.green.shade600
+            : Colors.orange.shade700,
       ),
-      StatCard(label: 'Tracked roots', value: '${status.rootCount}', icon: Icons.folder_special_outlined),
-      StatCard(label: 'Tracked files', value: '${status.fileCount}', note: '${status.deletedFileCount} deleted', icon: Icons.description_outlined),
-      StatCard(label: 'Total versions', value: '${status.versionCount}', note: '${status.snapshotCount} snapshots', icon: Icons.layers_outlined),
-      StatCard(label: 'Original data size', value: formatBytes(status.logicalBytes), icon: Icons.data_usage),
-      StatCard(label: 'Actual storage used', value: formatBytes(status.storedBytes), icon: Icons.save_outlined),
+      StatCard(
+        label: 'Tracked roots',
+        value: '${status.rootCount}',
+        icon: Icons.folder_special_outlined,
+      ),
+      StatCard(
+        label: 'Tracked files',
+        value: '${status.fileCount}',
+        note: '${status.deletedFileCount} deleted',
+        icon: Icons.description_outlined,
+      ),
+      StatCard(
+        label: 'Total versions',
+        value: '${status.versionCount}',
+        note: '${status.snapshotCount} snapshots',
+        icon: Icons.layers_outlined,
+      ),
+      StatCard(
+        label: 'Original data size',
+        value: formatBytes(status.logicalBytes),
+        icon: Icons.data_usage,
+      ),
+      StatCard(
+        label: 'Actual storage used',
+        value: formatBytes(status.storedBytes),
+        icon: Icons.save_outlined,
+      ),
       StatCard(
         label: 'Space saved',
         value: formatBytes(saved),
@@ -96,11 +153,19 @@ class _StatsGrid extends StatelessWidget {
         icon: Icons.block,
       ),
     ];
-    return LayoutBuilder(builder: (context, c) {
-      final columns = c.maxWidth > 1200 ? 4 : (c.maxWidth > 700 ? 2 : 1);
-      final width = (c.maxWidth - (columns - 1) * 12) / columns;
-      return Wrap(spacing: 12, runSpacing: 12, children: [for (final card in cards) SizedBox(width: width, child: card)]);
-    });
+    return LayoutBuilder(
+      builder: (context, c) {
+        final columns = c.maxWidth > 1200 ? 4 : (c.maxWidth > 700 ? 2 : 1);
+        final width = (c.maxWidth - (columns - 1) * 12) / columns;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final card in cards) SizedBox(width: width, child: card),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -115,34 +180,61 @@ class _DaemonCard extends ConsumerWidget {
       title: 'Daemon',
       trailing: TextButton.icon(
         onPressed: () async {
-          final ok = await confirmDialog(context,
-              title: 'Stop the daemon?', message: 'Changes will not be recorded until it is started again.', confirm: 'Stop');
+          final ok = await confirmDialog(
+            context,
+            title: 'Stop the daemon?',
+            message: 'Changes will not be recorded until it is started again.',
+            confirm: 'Stop',
+          );
           if (ok) await ref.read(connectionProvider.notifier).stopDaemon();
         },
         icon: const Icon(Icons.stop_circle_outlined),
         label: const Text('Stop'),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(spacing: 24, runSpacing: 6, children: [
-          Text('PID ${health.pid} · v${health.version}'),
-          Text('Event queue ${health.queueDepth}/${health.queueCapacity}'),
-          Text('Pending captures ${health.pendingCaptures}'),
-          Text('Events ${health.eventsReceived} (dropped ${health.eventsDropped})'),
-          Text('Last full reconcile ${formatRelative(health.lastReconcileAt)}${health.reconciling ? ' · reconciling now' : ''}'),
-        ]),
-        const SizedBox(height: 8),
-        for (final w in health.watchers)
-          Row(children: [
-            StatusDot(ok: w.healthy && w.error == null, size: 8),
-            const SizedBox(width: 8),
-            Expanded(child: Text('${w.path} — ${w.mode}${w.error != null ? ' (${w.error})' : ''}', overflow: TextOverflow.ellipsis)),
-          ]),
-        if (health.recentErrors.isNotEmpty) ...[
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 24,
+            runSpacing: 6,
+            children: [
+              Text('PID ${health.pid} · v${health.version}'),
+              Text('Event queue ${health.queueDepth}/${health.queueCapacity}'),
+              Text('Pending captures ${health.pendingCaptures}'),
+              Text(
+                'Events ${health.eventsReceived} (dropped ${health.eventsDropped})',
+              ),
+              Text(
+                'Last full reconcile ${formatRelative(health.lastReconcileAt)}${health.reconciling ? ' · reconciling now' : ''}',
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
-          for (final e in health.recentErrors.reversed.take(3))
-            Text(e, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+          for (final w in health.watchers)
+            Row(
+              children: [
+                StatusDot(ok: w.healthy && w.error == null, size: 8),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${w.path} — ${w.mode}${w.error != null ? ' (${w.error})' : ''}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          if (health.recentErrors.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            for (final e in health.recentErrors.reversed.take(3))
+              Text(
+                e,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+          ],
         ],
-      ]),
+      ),
     );
   }
 }
@@ -171,59 +263,91 @@ class _RootsCard extends ConsumerWidget {
             label: const Text('Track folder'),
           ),
         ),
-        builder: (list) => Column(children: [
-          for (final r in list)
-            ListTile(
-              leading: Icon(r.enabled ? Icons.folder : Icons.folder_off_outlined),
-              title: Text(r.path),
-              subtitle: Text('${r.fileCount} files · ${r.deletedFileCount} deleted · ${r.versionCount} versions · '
-                  'scanned ${formatRelative(r.lastScanAt)} · ${r.enabled ? (r.watchMode ?? 'not watched') : 'disabled'}'),
-              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                IconButton(
-                  tooltip: 'Scan now (find missed changes)',
-                  icon: const Icon(Icons.sync),
-                  onPressed: () async {
-                    final reports = await runAction(context, () => api.scan(target: r.id));
-                    if (reports != null && reports.isNotEmpty && context.mounted) {
-                      final rep = reports.first;
-                      showMessage(context,
-                          'Scan: ${rep.newFiles} new, ${rep.modified} modified, ${rep.deleted} deleted, ${rep.renamed} moved, ${rep.skipped} skipped');
-                    }
-                    refreshAll(ref);
-                  },
+        builder: (list) => Column(
+          children: [
+            for (final r in list)
+              ListTile(
+                leading: Icon(
+                  r.enabled ? Icons.folder : Icons.folder_off_outlined,
                 ),
-                IconButton(
-                  tooltip: 'Roll back this folder to a point in time',
-                  icon: const Icon(Icons.settings_backup_restore),
-                  onPressed: () async {
-                    final res = await showRollbackDialog(context, ref, r);
-                    if (res != null) refreshAll(ref);
-                  },
+                title: Text(r.path),
+                subtitle: Text(
+                  '${r.fileCount} files · ${r.deletedFileCount} deleted · ${r.versionCount} versions · '
+                  'scanned ${formatRelative(r.lastScanAt)} · ${r.enabled ? (r.watchMode ?? 'not watched') : 'disabled'}',
                 ),
-                IconButton(
-                  tooltip: r.enabled ? 'Pause monitoring' : 'Resume monitoring',
-                  icon: Icon(r.enabled ? Icons.pause_circle_outline : Icons.play_circle_outline),
-                  onPressed: () async {
-                    await runAction(context, () => api.setRootEnabled(r.id, !r.enabled));
-                    refreshAll(ref);
-                  },
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'Scan now (find missed changes)',
+                      icon: const Icon(Icons.sync),
+                      onPressed: () async {
+                        final reports = await runAction(
+                          context,
+                          () => api.scan(target: r.id),
+                        );
+                        if (reports != null &&
+                            reports.isNotEmpty &&
+                            context.mounted) {
+                          final rep = reports.first;
+                          showMessage(
+                            context,
+                            'Scan: ${rep.newFiles} new, ${rep.modified} modified, ${rep.deleted} deleted, ${rep.renamed} moved, ${rep.skipped} skipped',
+                          );
+                        }
+                        refreshAll(ref);
+                      },
+                    ),
+                    IconButton(
+                      tooltip: 'Roll back this folder to a point in time',
+                      icon: const Icon(Icons.settings_backup_restore),
+                      onPressed: () async {
+                        final res = await showRollbackDialog(context, ref, r);
+                        if (res != null) refreshAll(ref);
+                      },
+                    ),
+                    IconButton(
+                      tooltip: r.enabled
+                          ? 'Pause monitoring'
+                          : 'Resume monitoring',
+                      icon: Icon(
+                        r.enabled
+                            ? Icons.pause_circle_outline
+                            : Icons.play_circle_outline,
+                      ),
+                      onPressed: () async {
+                        await runAction(
+                          context,
+                          () => api.setRootEnabled(r.id, !r.enabled),
+                        );
+                        refreshAll(ref);
+                      },
+                    ),
+                    IconButton(
+                      tooltip: 'Stop tracking (history is kept)',
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: () async {
+                        final ok = await confirmDialog(
+                          context,
+                          title: 'Stop tracking?',
+                          message:
+                              '${r.path}\n\nMonitoring stops. Existing history is kept and can still be restored.',
+                          confirm: 'Stop tracking',
+                        );
+                        if (!ok || !context.mounted) return;
+                        await runAction(
+                          context,
+                          () => api.removeRoot(r.id),
+                          success: 'Stopped tracking ${r.path}',
+                        );
+                        refreshAll(ref);
+                      },
+                    ),
+                  ],
                 ),
-                IconButton(
-                  tooltip: 'Stop tracking (history is kept)',
-                  icon: const Icon(Icons.remove_circle_outline),
-                  onPressed: () async {
-                    final ok = await confirmDialog(context,
-                        title: 'Stop tracking?',
-                        message: '${r.path}\n\nMonitoring stops. Existing history is kept and can still be restored.',
-                        confirm: 'Stop tracking');
-                    if (!ok || !context.mounted) return;
-                    await runAction(context, () => api.removeRoot(r.id), success: 'Stopped tracking ${r.path}');
-                    refreshAll(ref);
-                  },
-                ),
-              ]),
-            ),
-        ]),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -237,22 +361,36 @@ class _RecentChanges extends ConsumerWidget {
     final activity = ref.watch(activityProvider(15));
     return SectionCard(
       title: 'Recent file changes',
-      trailing: TextButton(onPressed: () => context.go('/history'), child: const Text('All history')),
+      trailing: TextButton(
+        onPressed: () => context.go('/history'),
+        child: const Text('All history'),
+      ),
       padding: EdgeInsets.zero,
       child: AsyncView<List<VersionInfo>>(
         value: activity,
         isEmpty: (l) => l.isEmpty,
-        empty: const EmptyState(icon: Icons.history, title: 'No changes recorded yet'),
-        builder: (list) => Column(children: [
-          for (final v in list)
-            ListTile(
-              leading: SizedBox(width: 72, child: Align(alignment: Alignment.centerLeft, child: OperationChip(v.operation))),
-              title: Text(v.name, overflow: TextOverflow.ellipsis),
-              subtitle: Text(v.absolutePath, overflow: TextOverflow.ellipsis),
-              trailing: Text(formatRelative(v.timestamp)),
-              onTap: () => showVersionDetails(context, v.id),
-            ),
-        ]),
+        empty: const EmptyState(
+          icon: Icons.history,
+          title: 'No changes recorded yet',
+        ),
+        builder: (list) => Column(
+          children: [
+            for (final v in list)
+              ListTile(
+                leading: SizedBox(
+                  width: 72,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: OperationChip(v.operation),
+                  ),
+                ),
+                title: Text(v.name, overflow: TextOverflow.ellipsis),
+                subtitle: Text(v.absolutePath, overflow: TextOverflow.ellipsis),
+                trailing: Text(formatRelative(v.timestamp)),
+                onTap: () => showVersionDetails(context, v.id),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -266,21 +404,31 @@ class _RecentSnapshots extends ConsumerWidget {
     final snaps = ref.watch(snapshotsProvider);
     return SectionCard(
       title: 'Recent snapshots',
-      trailing: TextButton(onPressed: () => context.go('/snapshots'), child: const Text('All snapshots')),
+      trailing: TextButton(
+        onPressed: () => context.go('/snapshots'),
+        child: const Text('All snapshots'),
+      ),
       padding: EdgeInsets.zero,
       child: AsyncView<List<SnapshotInfo>>(
         value: snaps,
         isEmpty: (l) => l.isEmpty,
-        empty: const EmptyState(icon: Icons.photo_library_outlined, title: 'No snapshots yet'),
-        builder: (list) => Column(children: [
-          for (final s in list.take(8))
-            ListTile(
-              leading: const Icon(Icons.bookmark_outline),
-              title: Text(s.name),
-              subtitle: Text('${s.fileCount} files · ${formatBytes(s.totalSize)}'),
-              trailing: Text(formatRelative(s.createdAt)),
-            ),
-        ]),
+        empty: const EmptyState(
+          icon: Icons.photo_library_outlined,
+          title: 'No snapshots yet',
+        ),
+        builder: (list) => Column(
+          children: [
+            for (final s in list.take(8))
+              ListTile(
+                leading: const Icon(Icons.bookmark_outline),
+                title: Text(s.name),
+                subtitle: Text(
+                  '${s.fileCount} files · ${formatBytes(s.totalSize)}',
+                ),
+                trailing: Text(formatRelative(s.createdAt)),
+              ),
+          ],
+        ),
       ),
     );
   }

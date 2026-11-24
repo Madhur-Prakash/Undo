@@ -42,7 +42,7 @@ def test_tui_tabs_and_file_history(service: UndoService, tracked: RootRef) -> No
             await pilot.pause(0.6)
             files = app.query_one("#pane-files").query_one(DataTable)
             assert files.row_count == 2
-            assert files.get_row_at(0)[1].endswith("hello.txt")
+            assert files.get_row_at(0)[1].endswith("big.txt")  # path A to Z
             app.query_one("#pane-files").query_one("#sort-key", Select).value = "size"
             await pilot.pause(0.6)
             assert files.get_row_at(0)[1].endswith("big.txt")  # largest first

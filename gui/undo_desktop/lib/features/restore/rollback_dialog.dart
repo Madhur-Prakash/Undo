@@ -11,7 +11,11 @@ import '../../shared/widgets.dart';
 import 'restore_dialog.dart';
 
 /// Opens the rollback flow for [root]. Returns the restore result when something was restored.
-Future<RestoreResult?> showRollbackDialog(BuildContext context, WidgetRef ref, RootInfo root) async {
+Future<RestoreResult?> showRollbackDialog(
+  BuildContext context,
+  WidgetRef ref,
+  RootInfo root,
+) async {
   final choice = await showDialog<(String, DateTime)>(
     context: context,
     builder: (_) => _RollbackDialog(root: root),
@@ -24,7 +28,13 @@ Future<RestoreResult?> showRollbackDialog(BuildContext context, WidgetRef ref, R
     title: 'Roll back folder',
     source: '$folder\nas it was on ${formatDateTime(at)}',
     originalLocation: folder,
-    run: (dest, overwrite, dry) => api.restoreAt(folder, at, destination: dest, overwrite: overwrite, dryRun: dry),
+    run: (dest, overwrite, dry) => api.restoreAt(
+      folder,
+      at,
+      destination: dest,
+      overwrite: overwrite,
+      dryRun: dry,
+    ),
   );
 }
 
@@ -63,7 +73,9 @@ class _RollbackDialogState extends State<_RollbackDialog> {
   }
 
   Future<void> _chooseFolder() async {
-    final dir = await pickFolder('Folder to roll back (inside ${widget.root.path})');
+    final dir = await pickFolder(
+      'Folder to roll back (inside ${widget.root.path})',
+    );
     if (dir == null) return;
     setState(() {
       if (_inside(dir, widget.root.path)) {
@@ -84,7 +96,10 @@ class _RollbackDialogState extends State<_RollbackDialog> {
       lastDate: now,
     );
     if (date == null || !mounted) return;
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(_at));
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_at),
+    );
     if (time == null) return;
     setState(() {
       _at = DateTime(date.year, date.month, date.day, time.hour, time.minute);
@@ -100,54 +115,72 @@ class _RollbackDialogState extends State<_RollbackDialog> {
       title: const Text('Roll back a folder'),
       content: SizedBox(
         width: 560,
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(
-            'Puts every file in the folder back the way it was at the chosen time. '
-            'Files created later are left alone and nothing is deleted. You see a preview before anything is written.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 16),
-          Text('Folder', style: theme.textTheme.labelLarge),
-          const SizedBox(height: 4),
-          Row(children: [
-            Expanded(child: SelectableText(_folder)),
-            TextButton.icon(
-              onPressed: _chooseFolder,
-              icon: const Icon(Icons.folder_open),
-              label: const Text('Choose subfolder'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Puts every file in the folder back the way it was at the chosen time. '
+              'Files created later are left alone and nothing is deleted. You see a preview before anything is written.',
+              style: theme.textTheme.bodyMedium,
             ),
-          ]),
-          if (_error != null) Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
-          const SizedBox(height: 16),
-          Text('Point in time', style: theme.textTheme.labelLarge),
-          const SizedBox(height: 6),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final preset in _presets)
-              ChoiceChip(
-                label: Text(preset.label),
-                selected: _preset == preset.label,
-                onSelected: (_) => setState(() {
-                  _preset = preset.label;
-                  _at = DateTime.now().subtract(preset.ago);
-                }),
+            const SizedBox(height: 16),
+            Text('Folder', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(child: SelectableText(_folder)),
+                TextButton.icon(
+                  onPressed: _chooseFolder,
+                  icon: const Icon(Icons.folder_open),
+                  label: const Text('Choose subfolder'),
+                ),
+              ],
+            ),
+            if (_error != null)
+              Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+            const SizedBox(height: 16),
+            Text('Point in time', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final preset in _presets)
+                  ChoiceChip(
+                    label: Text(preset.label),
+                    selected: _preset == preset.label,
+                    onSelected: (_) => setState(() {
+                      _preset = preset.label;
+                      _at = DateTime.now().subtract(preset.ago);
+                    }),
+                  ),
+                ActionChip(
+                  avatar: const Icon(Icons.event, size: 18),
+                  label: const Text('Pick date and time'),
+                  onPressed: _chooseTime,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'As it was on ${formatDateTime(_at)}',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: future ? theme.colorScheme.error : null,
               ),
-            ActionChip(
-              avatar: const Icon(Icons.event, size: 18),
-              label: const Text('Pick date and time'),
-              onPressed: _chooseTime,
             ),
-          ]),
-          const SizedBox(height: 10),
-          Text(
-            'As it was on ${formatDateTime(_at)}',
-            style: theme.textTheme.titleSmall?.copyWith(color: future ? theme.colorScheme.error : null),
-          ),
-        ]),
+          ],
+        ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         FilledButton.icon(
-          onPressed: future ? null : () => Navigator.pop(context, (_folder, _at)),
+          onPressed: future
+              ? null
+              : () => Navigator.pop(context, (_folder, _at)),
           icon: const Icon(Icons.preview_outlined),
           label: const Text('Preview'),
         ),

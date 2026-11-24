@@ -14,7 +14,8 @@ String formatBytes(int? bytes) {
 
 final _dateTime = DateFormat('yyyy-MM-dd HH:mm:ss');
 
-String formatDateTime(DateTime? dt) => dt == null ? '—' : _dateTime.format(dt.toLocal());
+String formatDateTime(DateTime? dt) =>
+    dt == null ? '—' : _dateTime.format(dt.toLocal());
 
 String formatRelative(DateTime? dt, {DateTime? now}) {
   if (dt == null) return 'never';
@@ -35,6 +36,8 @@ String formatDuration(double seconds) {
   return '${d.inSeconds}s';
 }
 
-String percent(int part, int whole) => whole <= 0 ? '0%' : '${(part / whole * 100).toStringAsFixed(1)}%';
+String percent(int part, int whole) =>
+    whole <= 0 ? '0%' : '${(part / whole * 100).toStringAsFixed(1)}%';
 
-String shortHash(String? h) => h == null ? '—' : (h.length > 12 ? h.substring(0, 12) : h);
+String shortHash(String? h) =>
+    h == null ? '—' : (h.length > 12 ? h.substring(0, 12) : h);
