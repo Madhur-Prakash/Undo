@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   (`venv/`, `site-packages/`, `__pypackages__/`, `.nox/`), `*.pyc`/`*.pyo`; Node package stores
   (`.npm/`, `.pnpm-store/`, `.yarn/`, `bower_components/`, `jspm_packages/`); Rust build output
   and homes (`target/`, `.cargo/`, `.rustup/`, `*.crate`).
+- App: **Roll back** a tracked folder (or a subfolder) to a point in time from *Overview*, with a
+  preview first; no snapshot needed. Same as `undo restore FOLDER --at TIME`.
 - Side-by-side comparison of two versions in the app, `undo diff` and `undo tui`, like an editor's
   git diff: old on the left, new on the right, changed characters highlighted, `+added -removed`
   counts. The app can switch to an inline view; `undo diff -u` prints a unified diff.

@@ -17,6 +17,31 @@ undo restore ~/project/config.yml --version 42 --dry-run
 undo restore ~/project/config.yml --version 42 --overwrite
 ```
 
+## Rolling back a whole folder
+
+Puts every file in a folder back the way it was at a point in time. No snapshot is needed: every
+saved version is already in the history.
+
+* Files created later are left alone, and **nothing is deleted**.
+* Files that changed since then are only replaced with *overwrite*; their current content is
+  saved as a version first, so the rollback itself can be undone.
+
+**In the app:** *Overview › Tracked folders* › the **Roll back** button
+(<kbd>⟲</kbd>) on a folder. Then:
+
+1. keep the whole folder or choose a subfolder,
+2. pick a time (15 minutes ago … 1 week ago, or an exact date and time),
+3. **Preview** shows every file that would be restored, overwritten or skipped,
+4. optionally restore into another folder, tick *Overwrite*, then **Restore**.
+
+**On the command line:**
+
+```sh
+undo restore ~/project --at 2h --dry-run          # preview
+undo restore ~/project --at 2h --overwrite        # roll back
+undo restore ~/project --at 2026-11-24T14:00 --to ~/project-as-of-2pm   # into another folder
+```
+
 ## What can be restored
 
 | Situation | Command |

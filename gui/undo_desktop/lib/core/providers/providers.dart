@@ -40,29 +40,21 @@ class ConnectionNotifier extends Notifier<DaemonConnection> {
       await startDaemon();
       return;
     }
-    state = DaemonConnection(
-      ConnectionPhase.offline,
-      message: Discovery.isInitialized()
-          ? 'The Undo daemon is not running.'
-          : 'Undo is not initialised on this computer yet.',
-    );
+    state = DaemonConnection(ConnectionPhase.offline,
+        message: Discovery.isInitialized()
+            ? 'The Undo daemon is not running.'
+            : 'Undo is not initialised on this computer yet.');
   }
 
   Future<void> startDaemon() async {
-    state = const DaemonConnection(
-      ConnectionPhase.starting,
-      message: 'Starting the Undo daemon ...',
-    );
+    state = const DaemonConnection(ConnectionPhase.starting, message: 'Starting the Undo daemon ...');
     final error = await Discovery.startDaemon();
     final endpoint = await Discovery.find();
     if (endpoint != null) {
       _setConnected(endpoint);
     } else {
-      state = DaemonConnection(
-        ConnectionPhase.offline,
-        message:
-            'Could not start the daemon automatically.${error != null ? '\n$error' : ''}',
-      );
+      state = DaemonConnection(ConnectionPhase.offline,
+          message: 'Could not start the daemon automatically.${error != null ? '\n$error' : ''}');
     }
   }
 
@@ -74,10 +66,7 @@ class ConnectionNotifier extends Notifier<DaemonConnection> {
     } catch (_) {}
     _watchdog?.cancel();
     _autostartTried = true; // do not immediately restart what the user stopped
-    state = const DaemonConnection(
-      ConnectionPhase.offline,
-      message: 'The daemon was stopped.',
-    );
+    state = const DaemonConnection(ConnectionPhase.offline, message: 'The daemon was stopped.');
   }
 
   void _setConnected(DaemonEndpoint endpoint) {
@@ -87,59 +76,34 @@ class ConnectionNotifier extends Notifier<DaemonConnection> {
       if (state.phase != ConnectionPhase.connected) return;
       final still = await Discovery.find();
       if (still == null) {
-        state = const DaemonConnection(
-          ConnectionPhase.offline,
-          message: 'Lost connection to the daemon.',
-        );
+        state = const DaemonConnection(ConnectionPhase.offline, message: 'Lost connection to the daemon.');
       }
     });
   }
 }
 
-final connectionProvider =
-    NotifierProvider<ConnectionNotifier, DaemonConnection>(
-      ConnectionNotifier.new,
-    );
+final connectionProvider = NotifierProvider<ConnectionNotifier, DaemonConnection>(ConnectionNotifier.new);
 
 /// The API client; throws when not connected so dependent providers show an error state.
 final apiProvider = Provider<UndoApi>((ref) {
   final conn = ref.watch(connectionProvider);
   final api = conn.api;
-  if (api == null) {
-    throw ApiException('connection', conn.message ?? 'Not connected');
-  }
+  if (api == null) throw ApiException('connection', conn.message ?? 'Not connected');
   return api;
 });
 
-final statusProvider = FutureProvider.autoDispose<StatusInfo>(
-  (ref) => ref.watch(apiProvider).status(),
-);
-final rootsProvider = FutureProvider.autoDispose<List<RootInfo>>(
-  (ref) => ref.watch(apiProvider).roots(),
-);
-final activityProvider = FutureProvider.autoDispose
-    .family<List<VersionInfo>, int>(
-      (ref, limit) => ref.watch(apiProvider).activity(limit: limit),
-    );
-final snapshotsProvider = FutureProvider.autoDispose<List<SnapshotInfo>>(
-  (ref) => ref.watch(apiProvider).snapshots(),
-);
-final storageProvider = FutureProvider.autoDispose<StorageStats>(
-  (ref) => ref.watch(apiProvider).storageStats(),
-);
-final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
-  (ref) => ref.watch(apiProvider).settings(),
-);
-final exclusionsProvider = FutureProvider.autoDispose<List<ExclusionInfo>>(
-  (ref) => ref.watch(apiProvider).exclusions(),
-);
-final fileHistoryProvider = FutureProvider.autoDispose.family<FileHistory, int>(
-  (ref, id) => ref.watch(apiProvider).fileHistory(id),
-);
-final versionDetailProvider = FutureProvider.autoDispose
-    .family<VersionDetail, int>(
-      (ref, id) => ref.watch(apiProvider).version(id),
-    );
+final statusProvider = FutureProvider.autoDispose<StatusInfo>((ref) => ref.watch(apiProvider).status());
+final rootsProvider = FutureProvider.autoDispose<List<RootInfo>>((ref) => ref.watch(apiProvider).roots());
+final activityProvider =
+    FutureProvider.autoDispose.family<List<VersionInfo>, int>((ref, limit) => ref.watch(apiProvider).activity(limit: limit));
+final snapshotsProvider = FutureProvider.autoDispose<List<SnapshotInfo>>((ref) => ref.watch(apiProvider).snapshots());
+final storageProvider = FutureProvider.autoDispose<StorageStats>((ref) => ref.watch(apiProvider).storageStats());
+final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) => ref.watch(apiProvider).settings());
+final exclusionsProvider = FutureProvider.autoDispose<List<ExclusionInfo>>((ref) => ref.watch(apiProvider).exclusions());
+final fileHistoryProvider =
+    FutureProvider.autoDispose.family<FileHistory, int>((ref, id) => ref.watch(apiProvider).fileHistory(id));
+final versionDetailProvider =
+    FutureProvider.autoDispose.family<VersionDetail, int>((ref, id) => ref.watch(apiProvider).version(id));
 
 class FileQuery {
   const FileQuery({this.text = '', this.includeDeleted = false, this.rootId});
@@ -147,16 +111,11 @@ class FileQuery {
   final bool includeDeleted;
   final int? rootId;
 
-  FileQuery copyWith({
-    String? text,
-    bool? includeDeleted,
-    int? rootId,
-    bool clearRoot = false,
-  }) => FileQuery(
-    text: text ?? this.text,
-    includeDeleted: includeDeleted ?? this.includeDeleted,
-    rootId: clearRoot ? null : (rootId ?? this.rootId),
-  );
+  FileQuery copyWith({String? text, bool? includeDeleted, int? rootId, bool clearRoot = false}) => FileQuery(
+        text: text ?? this.text,
+        includeDeleted: includeDeleted ?? this.includeDeleted,
+        rootId: clearRoot ? null : (rootId ?? this.rootId),
+      );
 }
 
 class FileQueryNotifier extends Notifier<FileQuery> {
@@ -165,24 +124,17 @@ class FileQueryNotifier extends Notifier<FileQuery> {
   void update(FileQuery q) => state = q;
 }
 
-final fileQueryProvider = NotifierProvider<FileQueryNotifier, FileQuery>(
-  FileQueryNotifier.new,
-);
+final fileQueryProvider = NotifierProvider<FileQueryNotifier, FileQuery>(FileQueryNotifier.new);
 
 final filesProvider = FutureProvider.autoDispose<FilePage>((ref) {
   final q = ref.watch(fileQueryProvider);
-  return ref
-      .watch(apiProvider)
-      .files(query: q.text, includeDeleted: q.includeDeleted, rootId: q.rootId);
+  return ref.watch(apiProvider).files(query: q.text, includeDeleted: q.includeDeleted, rootId: q.rootId);
 });
 
 /// Theme mode follows the backend setting `ui.theme` once connected.
 final themeModeProvider = Provider<ThemeMode>((ref) {
   final settings = ref.watch(settingsProvider);
-  final theme = settings.maybeWhen(
-    data: (s) => (s['ui'] as Map?)?['theme'] as String?,
-    orElse: () => null,
-  );
+  final theme = settings.maybeWhen(data: (s) => (s['ui'] as Map?)?['theme'] as String?, orElse: () => null);
   return switch (theme) {
     'light' => ThemeMode.light,
     'dark' => ThemeMode.dark,
