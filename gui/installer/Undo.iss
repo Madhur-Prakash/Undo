@@ -91,6 +91,10 @@
   #endif
 
   #pragma message "Undo: building Undo.exe with Flutter, a few minutes (log: build\flutter.log)..."
+  ; Flutter's install step copies build\native_assets\windows, which it only creates on a first
+  ; build. If build\ was deleted by hand while .dart_tool\ kept its cache, the folder is missing
+  ; and the build fails with MSB3073 ("file INSTALL cannot find ...native_assets/windows").
+  #expr Exec(Cmd, '/S /C "if not exist "' + DesktopDir + '\build\native_assets\windows" mkdir "' + DesktopDir + '\build\native_assets\windows""', DesktopDir, 1, SW_HIDE)
   #if Exec(Cmd, '/S /C ""' + Flutter + '" build windows --release > "' + BuildDir + '\flutter.log" 2>&1"', DesktopDir, 1, SW_HIDE) != 0
     #error Flutter could not build the desktop app: see build\flutter.log.
   #endif

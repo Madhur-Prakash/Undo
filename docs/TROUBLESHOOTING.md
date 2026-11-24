@@ -91,6 +91,7 @@ undo logs -n 200   # the daemon's log, pretty-printed
 |---|---|
 | Installer compile fails | Read the log the error names in `gui/installer/build/` (`uv.log`, `pyinstaller.log`, `flutter.log`). |
 | *"EndUpdateResource failed, try excluding the Output folder from your antivirus"* | An antivirus scan briefly locked the new setup file. Compile again; `update_windows.sh` retries by itself. |
+| Compile fails with *"Flutter could not build the desktop app"*, and `flutter.log` shows `MSB3073` / *"file INSTALL cannot find …native_assets/windows"* | `gui/undo_desktop/build/` was deleted by hand while Flutter's cache in `.dart_tool/` was kept. `Undo.iss` now recreates the folder; otherwise run `cd gui/undo_desktop && flutter clean && flutter pub get` and compile again. Clean with `make clean`, which runs `flutter clean`, rather than deleting `build/` by hand. |
 | *"The Flutter directory is not a clone"* while compiling | `flutter.bat` was called by a bare name. `Undo.iss` resolves its full path from `PATH`; otherwise pass `/DFlutter=C:\path\to\flutter.bat`. |
 | `flutter build windows` fails about symlinks | Only if a Flutter plugin is added (the app uses none). Enable Developer Mode: `start ms-settings:developers`. |
 
