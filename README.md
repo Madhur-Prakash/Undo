@@ -208,7 +208,7 @@ Build > Compile (or `ISCC gui/installer/Undo.iss`). Compiling:
 
 The build machine needs uv and Flutter (with Visual Studio's C++ desktop workload). The machine
 you install on needs neither. See
-[docs/INSTALLATION.md](docs/INSTALLATION.md#windows-installer).
+[docs/INSTALLATION.md](docs/INSTALLATION.md#windows).
 
 ## How storage works
 

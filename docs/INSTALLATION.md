@@ -4,12 +4,12 @@ Pick the section for your machine:
 
 | Machine | How | You need |
 |---|---|---|
-| Windows 10/11 | [`Undo-Setup-<version>.exe`](#windows-installer) | Nothing: Python and the daemon are bundled |
-| Linux server (no desktop) | [`undo` command + systemd](#linux-server) | uv (it fetches Python 3.12) |
+| Windows 10/11 | [`Undo-Setup-<version>.exe`](#windows) | Nothing: Python and the daemon are bundled |
+| Linux server (no desktop) | [`undo` command + systemd](#linux-server) | `git`, `curl`, and `sudo` for two optional steps |
 | Linux desktop | [Release archive](#linux-desktop) with `installer/install.sh` | uv, and a desktop for the app |
 | Development, any OS | [From source](#from-source-development) | uv; Flutter for the app |
 
-All of them keep your history in the same place:
+Undo keeps its version history, settings and API token in one **data directory** per user:
 
 | OS | Data directory |
 |---|---|
@@ -17,30 +17,104 @@ All of them keep your history in the same place:
 | Linux | `$XDG_DATA_HOME/undo`, or `~/.local/share/undo` |
 
 Set `UNDO_HOME` (or pass `--data-dir`) to use another directory. The desktop app honours
-`UNDO_HOME` too. Uninstalling Undo never deletes this directory unless you ask it to.
+`UNDO_HOME` too. Uninstalling never deletes this directory unless you ask it to.
 
-> **Tested so far:** everything on Windows 11. The Linux steps below are written for Linux and
-> its tests are written to pass there, but they have not yet been run on a Linux machine.
+**Tested so far:**
+
+* Windows 11: everything except the machine-wide Windows service.
+* Ubuntu: the Linux server steps (user service, linger, exclusions).
+* Not yet run: the Linux desktop app and release archive.
+
+Before you track anything, read [Choosing what to track](#choosing-what-to-track).
 
 ---
 
-## Windows installer
+## Choosing what to track
 
-### Installing
+`undo track FOLDER` covers that folder and **everything below it**: all subfolders at any depth,
+including ones created later. Track the few top-level folders where your own work lives, such as
+a project folder, `Documents`, or `/srv/data`. You do not need to track each subfolder.
 
-Run `Undo-Setup-<version>.exe`. It installs for your account only, with no administrator rights,
-into `%LOCALAPPDATA%\Programs\Undo`. Setup offers three options:
+Do **not** track:
+
+| Folder | Why |
+|---|---|
+| Your whole home folder (`~`, `C:\Users\you`) | It holds caches, browser profiles and app data that change constantly. They would fill Undo's storage, and a home folder can have hundreds of thousands of files. |
+| System folders (`C:\Windows`, `/usr`, `/var`) | Constantly changing, many files are locked, and not your work |
+| Undo's data directory or program folder | Refused: Undo would record itself |
+
+Already skipped by default, inside any tracked folder (`undo exclude list` shows the full list):
+
+| Kind | Patterns |
+|---|---|
+| Version control | `.git/`, `.hg/`, `.svn/` |
+| Python | `.venv/`, `venv/`, `site-packages/`, `__pycache__/`, `*.whl`, `*.egg-info/`, `*.pyc`, tool caches |
+| Node | `node_modules/`, `.npm/`, `.pnpm-store/`, `.yarn/` |
+| Rust | `target/`, `.cargo/`, `.rustup/` |
+| Temporary and lock files | `*.tmp`, `*.swp`, `~$*` and similar |
+
+Add your own exclusions for anything else that is generated or downloaded, **before** the first
+scan:
+
+```sh
+undo exclude add "dist/"          # a folder name, anywhere in tracked folders
+undo exclude add "*.log"          # a file pattern
+undo exclude add "data/raw"       # a path relative to the tracked folder
+undo exclude list
+```
+
+**The first scan** reads, hashes and compresses every file once. On big trees (100,000+ files or
+several GB) that takes minutes, so let the daemon do it in the background (see the Linux steps).
+Later scans only look at files whose size or modification time changed, so they are fast.
+
+---
+
+## Windows
+
+### 1. Install
+
+Run `Undo-Setup-<version>.exe`. It installs for your account only, needs no administrator rights,
+and installs into `%LOCALAPPDATA%\Programs\Undo`. Keep the first two options ticked:
 
 | Option | Default | What it does |
 |---|---|---|
-| Start the Undo daemon when I sign in | on | Runs `undo service install`: adds the value `Undo` to your Run key, so the daemon starts at every sign-in and records changes even when the app is closed. It is listed (and can be switched off) under *Settings > Apps > Startup* |
-| Add the undo command to PATH | on | Adds `…\Undo\backend` to your user `PATH`, so `undo` and `undo tui` work in any new terminal |
+| Start the Undo daemon when I sign in | on | Runs `undo service install`. It adds the value `Undo` to your per-user Run key, so the daemon starts at every sign-in and records changes even when the app is closed. You can switch it off under *Settings > Apps > Startup*. |
+| Add the undo command to PATH | on | Adds `%LOCALAPPDATA%\Programs\Undo\backend` to your user `PATH`, so `undo` and `undo tui` work in any **new** terminal |
 | Create a desktop shortcut | off | A desktop icon for the app |
 
-When Setup finishes, open **Undo** from the Start menu, choose *Track folder* and pick a folder.
-Undo records its current state and then every change.
+Setup also creates the data directory (`undo init`), starts the daemon, and offers to open the
+app.
 
-The installed files:
+### 2. Check the installation
+
+Open a **new** terminal. Terminals that were already open still have the old `PATH`; in VS Code,
+close and reopen VS Code. Then run:
+
+```powershell
+undo --version            # undo 1.0.0
+(Get-Command undo).Source # ...\AppData\Local\Programs\Undo\backend\undo.exe
+undo status               # daemon  running
+undo service status       # autostart at sign-in: installed
+```
+
+If `undo service status` says *not installed*, run `undo service install`.
+
+### 3. Track folders
+
+In the app: **Overview > Track folder**, then pick the folder. From a terminal:
+
+```powershell
+undo track "C:\Users\you\Documents"
+cd C:\code\my-project
+undo track .              # the folder you are in
+undo roots                # what is tracked
+```
+
+Then edit and save a file in a tracked folder. A couple of seconds later, `undo history FILE`
+should show a `CREATE` and a `MODIFY` entry. Day-to-day use is in
+[Using Undo](#using-undo-any-platform).
+
+### Installed files
 
 ```
 %LOCALAPPDATA%\Programs\Undo\
@@ -52,48 +126,59 @@ The installed files:
     _internal\             Python runtime and libraries
 ```
 
-The app starts the daemon by itself when it is not running. On first run it also creates the data
-directory (`undo-daemon.exe --init`). The Start menu also has **Undo (terminal dashboard)**, which
-opens `undo tui`.
-
-### Upgrading and uninstalling
-
-* **Upgrade:** run the newer `Undo-Setup-<version>.exe`. It asks you to close the app if it is
-  open and stops the daemon cleanly (pending captures finish first). Then it replaces the programs.
-  Your history and settings are untouched.
-* **Uninstall:** use *Settings > Apps > Undo > Uninstall*. It stops the daemon, removes the logon
-  task and the `PATH` entry, then asks whether to delete your version history. The default is
-  **No**: if you keep it, reinstalling picks it up again.
+The Start menu has **Undo**, and **Undo (terminal dashboard)**, which opens `undo tui`. The
+app starts the daemon itself if it is not running.
 
 ### Starting at sign-in
 
-The daemon starts when you sign in through the per-user Run key: the value `Undo` in
-`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, which runs
-`"…\Undo\backend\undo-daemon.exe" --data-dir "…\Undo"`. This needs no administrator rights.
+The daemon starts at sign-in through the value `Undo` in
+`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. That value runs
+`"…\Programs\Undo\backend\undo-daemon.exe" --data-dir "…\Undo"`. No administrator rights are
+needed.
 
 ```powershell
-undo service status       # autostart at sign-in: installed, and the registered command
-undo service install      # add it (and start the daemon now)
+undo service status       # installed or not, and the registered command
+undo service install      # add it, and start the daemon now
 undo service uninstall    # remove it
 ```
 
-You can also switch it on or off under *Settings > Apps > Startup* (entry *Undo*). It starts at
-**sign-in**, not at boot. Changes made before you sign in, for example by another account or
-another OS, are found by the rescan the daemon runs when it starts. To record changes when
-nobody is signed in, use the [machine-wide service](#machine-wide-windows-service-optional-advanced).
+The daemon starts at **sign-in**, not at boot. Changes made while you are signed out are found by
+the rescan the daemon runs when it starts. To record changes when nobody is signed in, use the
+[machine-wide service](#machine-wide-windows-service-optional-advanced).
+
+### Updating
+
+Run the newer `Undo-Setup-<version>.exe` and keep the options ticked. Setup asks you to close the
+app, stops the daemon cleanly, replaces the programs and starts the daemon again. Your history and
+settings are kept, and new default exclusions are added to your list once.
+
+### Uninstalling
+
+Use *Settings > Apps > Undo > Uninstall*. It:
+
+* stops the daemon,
+* removes the start-at-sign-in entry and the `PATH` entry,
+* asks whether to delete your version history.
+
+The default is **No**. If you keep the history, reinstalling picks it up again.
 
 ### Building the installer
 
 `gui/installer/Undo.iss` is an Inno Setup 7 script that builds everything from the repository.
-On the build machine you need:
+The build machine needs:
 
 * [uv](https://docs.astral.sh/uv/),
 * [Flutter](https://flutter.dev) on `PATH`,
 * Visual Studio 2022 with the *Desktop development with C++* workload,
 * Inno Setup 7.
 
-Open `Undo.iss` in Inno Setup and choose **Build > Compile**, or from a terminal run
-`ISCC gui\installer\Undo.iss`. Compiling:
+Open `Undo.iss` in Inno Setup and choose **Build > Compile**, or from the repository root run:
+
+```powershell
+& "C:\Program Files\Inno Setup 7\ISCC.exe" gui\installer\Undo.iss
+```
+
+Compiling:
 
 1. runs `uv sync --all-packages` (log: `gui/installer/build/uv.log`),
 2. builds `undo.exe` and `undo-daemon.exe` with PyInstaller from `gui/installer/Undo.spec` into
@@ -110,7 +195,14 @@ The first compile takes several minutes. If a step fails, the error names its lo
 | `/DFlutter=C:\flutter\bin\flutter.bat` | The Flutter to build with (default: `flutter.bat` found on `PATH`) |
 
 From Git Bash, prefix the command with `MSYS_NO_PATHCONV=1`, or Bash rewrites the `/D` options as
-paths. Example: `MSYS_NO_PATHCONV=1 ISCC /DBuildApp=0 gui/installer/Undo.iss`.
+paths:
+
+```sh
+MSYS_NO_PATHCONV=1 "/c/Program Files/Inno Setup 7/ISCC.exe" /DBuildApp=0 gui/installer/Undo.iss
+```
+
+If you see *"EndUpdateResource failed, try excluding the Output folder from your antivirus"*,
+compile again: an antivirus scan briefly locked the new setup file.
 
 The version comes from `gui/undo_desktop/pubspec.yaml`. `python scripts/release.py X.Y.Z` updates
 it together with the Python packages. The icon is `gui/assets/undo.ico`, drawn by
@@ -118,10 +210,9 @@ it together with the Python packages. The icon is `gui/assets/undo.ico`, drawn b
 
 ### Machine-wide Windows service (optional, advanced)
 
-The installer's autostart runs the daemon while you are signed in, which suits a personal PC.
-To record changes for an account that is not signed in, run the daemon as a Windows service
-instead. This needs administrator rights and a Python install with pywin32
-(`pip install "undo-core[windows-service]"`):
+Start-at-sign-in suits a personal PC. To record changes for an account that is not signed in, run
+the daemon as a Windows service instead. This needs administrator rights and a Python install
+with pywin32 (`pip install "undo-core[windows-service]"`):
 
 ```powershell
 undo --data-dir D:\UndoData init
@@ -130,141 +221,206 @@ python services\windows\uninstall_service.py
 ```
 
 A service running as LocalSystem can only see files LocalSystem can read. Use `--user` to run it
-as the account that owns the tracked folders. This path has not been tested yet.
+as the account that owns the tracked folders. This has not been tested yet.
 
 ---
 
 ## Linux server
 
-On a server there is no desktop. You use the daemon, the `undo` command and the terminal
-dashboard `undo tui`, all of which work over SSH. Do every step as the user who owns the files
-you want to track, unless the step says `sudo`.
+On a server there is no desktop app. You use the daemon, the `undo` command and the terminal
+dashboard `undo tui`, all of which work over SSH. Run every step as the user who owns the files
+you want to track. Only the steps marked `sudo` need root.
 
-### 1. Install uv and Undo
+### 1. Install uv
 
 ```sh
 curl -LsSf https://astral.sh/uv/install.sh | sh
-export PATH="$HOME/.local/bin:$PATH"          # also add this line to ~/.bashrc
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+uv --version
 ```
 
-Then use **either** a copy of the repository **or** a release archive.
-
-**From the repository** ([github.com/Madhur-Prakash/Undo](https://github.com/Madhur-Prakash/Undo)):
+### 2. Install Undo
 
 ```sh
-git clone https://github.com/Madhur-Prakash/Undo.git && cd Undo
+git clone https://github.com/Madhur-Prakash/Undo.git ~/undo
+cd ~/undo
 uv tool install --python 3.12 ./cli --with ./backend
+undo --version
 ```
 
-Without `git` on the server, download the source zip from the repository page (*Code >
-Download ZIP*), or copy a checkout with `rsync`/`scp`.
+uv downloads Python 3.12 if the server does not have it. `undo` is installed into
+`~/.local/bin`.
 
-**From a release archive:** run `python scripts/build.py` on any Linux machine with uv. It writes
-`dist/undo-linux.tar.gz`. Copy that to the server, then:
+### 3. Initialise
 
 ```sh
-tar xzf undo-linux.tar.gz && cd undo-linux
-./installer/install.sh --no-desktop          # does steps 1-3 below for you
+undo init                 # creates ~/.local/share/undo: database, settings, API token
+undo doctor               # checks permissions, disk space and the inotify limit
 ```
 
-`install.sh` installs the `undo` command and runs `undo init`. If a systemd user session is
-available, it also installs the user service.
+### 4. Raise the inotify limit (sudo, once)
 
-### 2. Set up and choose folders
+Linux needs one inotify watch per watched directory. Ubuntu's default (often 8,192–65,536) is too
+low for real project trees. When a tree needs more, Undo falls back to polling, which is slower to
+notice changes, and `undo status` reports *"inotify watch limit reached"*. Raise the limit before
+tracking:
 
 ```sh
-undo init                     # data directory, database, API token
-undo track /srv/data          # repeat for each folder; records its current state
-undo doctor                   # checks permissions, disk space, the inotify limit
+echo fs.inotify.max_user_watches=524288 | sudo tee /etc/sysctl.d/90-undo.conf
+sudo sysctl --system
+cat /proc/sys/fs/inotify/max_user_watches      # 524288
 ```
 
-### 3. Keep the daemon running
+### 5. Start the daemon and keep it running
 
-Choose **one** of these.
+Use **one** of these two options.
 
-**User service** (no root needed for the service itself):
+**Option A: user service** (recommended; no root needed for the service itself):
 
 ```sh
-undo service install                  # ~/.config/systemd/user/undo.service, enabled and started
-sudo loginctl enable-linger "$USER"   # required on servers: keep it running after you log out
+undo service install                  # writes ~/.config/systemd/user/undo.service, enables and starts it
+sudo loginctl enable-linger "$USER"   # start at boot and keep running after you log out
 ```
 
-Without `enable-linger`, systemd stops user services when your last SSH session closes.
-
-**System service** (starts at boot, runs as the account you name):
+Without linger, systemd only starts user services when you log in, and stops them when your
+last SSH session closes. Check both:
 
 ```sh
-sudo services/linux/install_service.sh --system --user alice
-sudo -u alice undo track /srv/data
+undo service status                         # systemd --user: enabled
+loginctl show-user "$USER" -p Linger        # Linger=yes
+systemctl --user status undo                # active (running)
 ```
 
-This installs `/etc/systemd/system/undo.service` running as `alice`
-(`WantedBy=multi-user.target`, `Nice=10`, idle IO class, `MemoryHigh=512M`). The script finds the
-Python that has Undo installed; pass `--python PATH` or `--data-dir DIR` to override.
-
-Check that it runs:
+**Option B: system service** (starts at boot and runs as the account you name):
 
 ```sh
+sudo ~/undo/services/linux/install_service.sh --system --user "$USER"
+sudo systemctl is-enabled undo              # enabled
+sudo systemctl status undo                  # active (running)
+```
+
+This installs `/etc/systemd/system/undo.service` (`WantedBy=multi-user.target`, `Nice=10`, idle
+IO class, `MemoryHigh=512M`). The script finds the Python that has Undo installed; pass
+`--python PATH` or `--data-dir DIR` to override. With this option, `undo service status` (which
+checks the user service) reports `not-found`, and that is expected.
+
+### 6. Check exclusions, then track folders
+
+First look at what is big in the folder you want to track, and exclude anything generated:
+
+```sh
+du -sh ~/myproject/* ~/myproject/.[!.]* 2>/dev/null | sort -h | tail -15
+undo exclude list
+undo exclude add "dist/"                    # example: build output
+```
+
+Then track the folder. With the daemon running, `track` returns at once and the daemon does the
+first scan in the background:
+
+```sh
+undo track ~/myproject                      # or: cd ~/myproject && undo track .
+undo roots
+undo status                                 # "reconciling yes" while the first scan runs
+```
+
+Repeat `undo track` for each separate top-level folder. Do not track `~` itself.
+
+If the daemon is **not** running, `undo track` does the first scan in your terminal and shows
+nothing until it finishes, which can take minutes on large trees. Add `--no-scan` to return at
+once and let the daemon scan when it starts.
+
+### 7. Verify
+
+```sh
+undo status                 # last full reconcile set, files/versions > 0, no "Recent errors"
+undo skipped | head -20     # files left out and why
+echo test >> ~/myproject/undo-check.txt
+sleep 3
+undo history ~/myproject/undo-check.txt     # a CREATE entry
+rm ~/myproject/undo-check.txt
+```
+
+### Updating
+
+```sh
+cd ~/undo
+git pull
+uv tool install --force --reinstall --python 3.12 ./cli --with ./backend
+undo --version
+systemctl --user daemon-reload
+systemctl --user restart undo               # system service: sudo systemctl restart undo
 undo status
-systemctl --user status undo          # or: sudo systemctl status undo   (system service)
-journalctl --user -u undo -f          # or: undo logs
 ```
 
-### 4. Raise the inotify limit for large trees
+`--reinstall` matters: without it, uv may reuse its cached build of the previous code when the
+version number has not changed.
 
-Linux needs one inotify watch per watched directory, and the default limit is often 8,192 or
-65,536. When a tree needs more, Undo falls back to polling for that folder. `undo status` and
-`undo doctor` say so. Raise the limit once:
+### Stopping, restarting, logs
 
 ```sh
-echo fs.inotify.max_user_watches=524288 | sudo tee /etc/sysctl.d/90-undo.conf && sudo sysctl --system
+systemctl --user stop undo        # stop (systemd will not restart it)
+systemctl --user start undo
+systemctl --user restart undo
+journalctl --user -u undo -f      # systemd's log; Undo's own log: undo logs
 ```
 
-### 5. Use it
+Stop the daemon through systemd, not with `kill`. A killed daemon finishes its current step
+before it exits and keeps the data directory locked until then. Commands that need the directory
+report *"The Undo data directory is in use by another process"*. If a stop hangs, use
+`systemctl --user kill -s KILL undo`. That is safe for your data: writes are crash-safe and the
+next start cleans up.
+
+### Fixing a wrong folder
+
+To stop tracking a folder and delete what was recorded for it:
 
 ```sh
-undo status
-undo tui                                       # full-screen dashboard over SSH
-undo history /srv/data/config.yml
-undo restore /srv/data/config.yml --version 12 --overwrite
-undo restore /srv/data/config.yml --at 2h --to /tmp/    # as it was two hours ago, into /tmp
-undo recover                                   # list deleted files
-undo recover /srv/data/deleted.txt
+undo untrack /path/you/tracked --purge -y   # without --purge the history is kept
+undo storage gc                             # frees the disk space
 ```
 
-Every command: [CLI.md](CLI.md).
+If this reports that the data directory is in use, the daemon is busy (for example, scanning a
+huge folder). Stop it with `systemctl --user stop undo`, run the two commands, then
+`systemctl --user start undo`.
+
+### Removing Undo
+
+```sh
+undo service uninstall                       # system service: sudo ~/undo/services/linux/uninstall_service.sh --system
+uv tool uninstall undo-cli
+rm -rf ~/.local/share/undo                   # only if you also want to delete the history
+```
 
 The desktop app cannot connect to a server from another computer. On purpose, the daemon's API
 listens on `127.0.0.1` only and needs the token in the data directory. Use `undo tui` over SSH.
-
-### Updating and removing
-
-* **Update:** `git pull` (or get the new archive), run the same `uv tool install` command again
-  with `--force` (or rerun `install.sh`), then restart the service: `systemctl --user restart undo`
-  or `sudo systemctl restart undo`.
-* **Remove:** run `undo service uninstall`, or `sudo services/linux/uninstall_service.sh --system`
-  for a system service. Then run `uv tool uninstall undo-cli`. With a release archive,
-  `./installer/uninstall.sh` does all of it. History stays in `~/.local/share/undo` unless you add
-  `--remove-data` or delete it yourself.
 
 ---
 
 ## Linux desktop
 
-Build the release archive on a Linux machine with uv and Flutter: run `python scripts/build.py`
-to get `dist/undo-linux.tar.gz`. Then:
+Build the release archive on a Linux machine with uv and Flutter:
 
 ```sh
-tar xzf undo-linux.tar.gz && cd undo-linux
-./installer/install.sh                 # options: --no-service, --no-desktop
+cd ~/undo
+python3 scripts/build.py                     # writes dist/undo-linux.tar.gz
 ```
 
-This:
+Install it:
+
+```sh
+tar xzf dist/undo-linux.tar.gz && cd undo-linux
+./installer/install.sh                       # options: --no-service, --no-desktop
+```
+
+`install.sh`:
 
 * installs the `undo` command (uv, else pipx, else pip),
 * runs `undo init` and installs the systemd user service,
 * copies the app to `~/.local/opt/undo`,
-* puts a menu entry in `~/.local/share/applications/undo-desktop.desktop`.
+* adds a menu entry, `~/.local/share/applications/undo-desktop.desktop`.
+
+Then raise the inotify limit (step 4 above) and track folders from the app or with `undo track`.
 
 A `.desktop` file is how Linux desktops (GNOME, KDE, Xfce and others) list an application in their
 menu, launcher and search. It is the Linux equivalent of a Start-menu shortcut. The template is
@@ -274,9 +430,14 @@ path and the icon (`undo.png`).
 `./installer/uninstall.sh` removes everything except your history (`--remove-data` deletes that
 too).
 
-To build only the app: install `clang cmake ninja-build pkg-config libgtk-3-dev`, then run
-`cd gui/undo_desktop && flutter build linux --release`. The app's folder picker uses `zenity` or
-`kdialog`, whichever is installed.
+To build only the app:
+
+```sh
+sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev zenity
+cd gui/undo_desktop && flutter build linux --release
+```
+
+The app's folder picker uses `zenity` or `kdialog`, whichever is installed.
 
 ---
 
@@ -297,9 +458,15 @@ uv tool install --editable ./cli --with-editable ./backend    # = make install /
 
 Without uv: `python3.12 -m pip install --user ./backend ./cli`.
 
-Then `undo track PATH`, `undo start`, and `make gui` (or `./make.sh gui`) to run the app with
-Flutter. On Windows, `undo service install` registers `pythonw -m undo_core.daemon` in the
-per-user Run key, so no console window opens (the installed build registers `undo-daemon.exe`). On Linux it installs the systemd user unit.
+Then run `undo track PATH` and `undo start`, and `make gui` (or `./make.sh gui`) to run the app
+with Flutter.
+
+* **Windows:** `undo service install` registers `pythonw -m undo_core.daemon` in the per-user Run
+  key, so no console window opens. The installed build registers `undo-daemon.exe` instead.
+* **Linux:** it installs the systemd user unit.
+
+Do not run a development daemon and an installed one against the same data directory. Only one
+daemon can own it at a time.
 
 The app uses no Flutter plugins. Its folder picker is native code in
 `gui/undo_desktop/windows/runner/flutter_window.cpp`, so Windows Developer Mode is not needed.
@@ -309,3 +476,30 @@ The app uses no Flutter plugins. Its folder picker is native code in
 `make build` / `python scripts/build.py` writes the Python wheels to `dist/python/`. On Linux it
 also writes the desktop bundle and `dist/undo-linux.tar.gz`. On Windows, ship
 `Undo-Setup-<version>.exe` from `gui/installer/Undo.iss` instead.
+
+---
+
+## Using Undo (any platform)
+
+```sh
+undo status                                   # daemon state, totals, recent errors
+undo history FILE                             # every version of a file, newest first
+undo cat 42                                   # content of version 42
+undo diff 41 42                               # what changed between two versions
+undo restore FILE --version 42 --dry-run      # preview
+undo restore FILE --version 42 --overwrite    # replace the file (its current content is versioned first)
+undo restore FILE --at 2h --to /tmp/          # as it was 2 hours ago, into /tmp
+undo recover                                  # list deleted files
+undo recover FILE                             # bring one back
+undo tui                                      # full-screen dashboard
+```
+
+In `undo tui`:
+
+* **3** opens *Files*: search, then press **Enter** on a file to see its history.
+* On a version, press **v** to view it, **d** to diff it with the previous version, **i** for
+  details, and **r** to restore it.
+* The restore dialog shows a **Preview** before anything is written.
+
+Every command and option: [CLI.md](CLI.md). Getting files back in common situations:
+[RECOVERY.md](RECOVERY.md). Problems: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
