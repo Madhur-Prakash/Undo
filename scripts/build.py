@@ -46,7 +46,8 @@ def build_gui() -> Path | None:
         return None
     target = "windows" if IS_WINDOWS else "linux"
     try:
-        run("flutter", "build", target, "--release", cwd=GUI)
+        # Full icon font: a trimmed one can go stale and leave new icons blank.
+        run("flutter", "build", target, "--release", "--no-tree-shake-icons", cwd=GUI)
     except subprocess.CalledProcessError as exc:
         print(f"desktop build failed ({exc}); continuing without GUI bundle", file=sys.stderr)
         return None

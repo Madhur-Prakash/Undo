@@ -498,6 +498,17 @@ bash scripts/update_windows.sh
 MSYS_NO_PATHCONV=1 "/c/Program Files/Inno Setup 7/ISCC.exe" /DFlutter=C:\\flutter\\bin\\flutter.bat gui/installer/Undo.iss
 ```
 
+### A button in the app has a tooltip but no icon
+
+* **Cause:** a release build keeps only the icons it finds, and an incremental rebuild reused an
+  older, smaller icon font, so newly added icons were missing from it.
+* **Fix:** the installer and `scripts/build.py` now build with `--no-tree-shake-icons`, which
+  ships the whole icon font. Rebuild and reinstall:
+
+```sh
+bash scripts/update_windows.sh
+```
+
 ### `flutter build windows` fails about symlinks
 
 * **Cause:** only happens if a Flutter plugin is added. The app uses none.

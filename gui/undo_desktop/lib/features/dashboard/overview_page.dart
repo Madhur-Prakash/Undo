@@ -200,7 +200,7 @@ class _RootsCard extends ConsumerWidget {
                 ),
                 IconButton(
                   tooltip: 'Roll back this folder to a point in time',
-                  icon: const Icon(Icons.settings_backup_restore),
+                  icon: const Icon(Icons.history),
                   onPressed: () async {
                     final res = await showRollbackDialog(context, ref, r);
                     if (res != null) refreshAll(ref);

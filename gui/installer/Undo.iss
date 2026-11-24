@@ -95,7 +95,10 @@
   ; build. If build\ was deleted by hand while .dart_tool\ kept its cache, the folder is missing
   ; and the build fails with MSB3073 ("file INSTALL cannot find ...native_assets/windows").
   #expr Exec(Cmd, '/S /C "if not exist "' + DesktopDir + '\build\native_assets\windows" mkdir "' + DesktopDir + '\build\native_assets\windows""', DesktopDir, 1, SW_HIDE)
-  #if Exec(Cmd, '/S /C ""' + Flutter + '" build windows --release > "' + BuildDir + '\flutter.log" 2>&1"', DesktopDir, 1, SW_HIDE) != 0
+  ; --no-tree-shake-icons ships the whole Material icon font (about 1.6 MB). A release build
+  ; otherwise keeps only the icons it finds, and an incremental rebuild can reuse a stale subset,
+  ; so newly added icons render as empty buttons.
+  #if Exec(Cmd, '/S /C ""' + Flutter + '" build windows --release --no-tree-shake-icons > "' + BuildDir + '\flutter.log" 2>&1"', DesktopDir, 1, SW_HIDE) != 0
     #error Flutter could not build the desktop app: see build\flutter.log.
   #endif
 #endif

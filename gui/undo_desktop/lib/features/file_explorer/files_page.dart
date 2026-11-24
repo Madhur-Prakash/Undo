@@ -75,7 +75,7 @@ class _FilesPageState extends ConsumerState<FilesPage> {
           ),
           const SizedBox(width: 12),
           roots.maybeWhen(
-            data: (list) => DropdownButton<int?>(
+            data: (list) => AppDropdown<int?>(
               value: query.rootId,
               hint: const Text('All roots'),
               items: [
@@ -100,7 +100,7 @@ class _FilesPageState extends ConsumerState<FilesPage> {
           ),
         ]),
       ),
-      const SizedBox(height: 8),
+      const SizedBox(height: 16),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 6),
         child: DefaultTextStyle(

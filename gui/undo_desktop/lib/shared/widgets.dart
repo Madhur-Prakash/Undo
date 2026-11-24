@@ -189,6 +189,42 @@ class OperationChip extends StatelessWidget {
   }
 }
 
+/// A toolbar dropdown styled like the search fields (outlined box, no underline).
+///
+/// Flutter's plain [DropdownButton] keeps keyboard focus after a choice and paints a focus
+/// highlight that stays on; this one has no focus colour and releases focus once you choose.
+class AppDropdown<T> extends StatelessWidget {
+  const AppDropdown({super.key, required this.value, required this.items, required this.onChanged, this.hint});
+  final T value;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?> onChanged;
+  final Widget? hint;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: const InputDecoration(
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          hint: hint,
+          items: items,
+          isDense: false,
+          focusColor: Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          onChanged: (v) {
+            FocusManager.instance.primaryFocus?.unfocus();
+            onChanged(v);
+          },
+        ),
+      ),
+    );
+  }
+}
+
 /// One way to sort a list. [descendingFirst] is the natural direction picked when the
 /// option is chosen: names A to Z, times newest first, sizes and counts largest first.
 /// The keys match the CLI's `--sort` values (cli/undo_cli/sorting.py).
@@ -224,7 +260,7 @@ class SortControl extends StatelessWidget {
     return Row(mainAxisSize: MainAxisSize.min, children: [
       Icon(Icons.sort, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
       const SizedBox(width: 8),
-      DropdownButton<String>(
+      AppDropdown<String>(
         value: current.key,
         items: [for (final o in options) DropdownMenuItem(value: o.key, child: Text(o.label))],
         onChanged: (k) {
@@ -233,6 +269,7 @@ class SortControl extends StatelessWidget {
           onChanged((key: k, descending: o.descendingFirst));
         },
       ),
+      const SizedBox(width: 4),
       IconButton(
         tooltip: 'Sorted $hint; click to reverse',
         icon: Icon(value.descending ? Icons.arrow_downward : Icons.arrow_upward, size: 20),

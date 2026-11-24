@@ -60,7 +60,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
             ),
           ),
           const SizedBox(width: 12),
-          DropdownButton<String?>(
+          AppDropdown<String?>(
             value: _operation,
             hint: const Text('All operations'),
             items: [
@@ -74,7 +74,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
           SortControl(options: _sortOptions, value: _sort, onChanged: (s) => setState(() => _sort = s)),
         ]),
       ),
-      const SizedBox(height: 12),
+      const SizedBox(height: 16),
       Expanded(
         child: AsyncView<List<VersionInfo>>(
           value: activity,

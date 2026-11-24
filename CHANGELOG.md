@@ -4,72 +4,6 @@ All notable changes to Undo are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
-## [Unreleased]
-
-### Added
-
-- Sorting for files, history and snapshots, in the app (a *Sort* menu and a direction arrow),
-  `undo tui` (a *Sort* menu and *Reverse*) and the CLI (`--sort KEY`, `--reverse`). Each key
-  starts in its natural order: names A to Z, times newest first, sizes and counts largest first.
-  Files are sorted by the daemon before paging (`GET /files?sort=&descending=`).
-- `undo files`: list tracked files from the command line, with search, `--root`, `--deleted`
-  and sorting.
-- App: click a tracked folder on *Overview* to open *Files* showing only that folder.
-- Default exclusions for installed and built packages, which change constantly and are not
-  your work: Python wheels and eggs (`*.whl`, `*.egg`, `*.egg-info/`, `.eggs/`), environments
-  (`venv/`, `site-packages/`, `__pypackages__/`, `.nox/`), `*.pyc`/`*.pyo`; Node package stores
-  (`.npm/`, `.pnpm-store/`, `.yarn/`, `bower_components/`, `jspm_packages/`); Rust build output
-  and homes (`target/`, `.cargo/`, `.rustup/`, `*.crate`).
-- App: **Roll back** a tracked folder (or a subfolder) to a point in time from *Overview*, with a
-  preview first; no snapshot needed. Same as `undo restore FOLDER --at TIME`.
-- Side-by-side comparison of two versions in the app, `undo diff` and `undo tui`, like an editor's
-  git diff: old on the left, new on the right, changed characters highlighted, `+added -removed`
-  counts. The app can switch to an inline view; `undo diff -u` prints a unified diff.
-- `scripts/update_linux.sh` and `scripts/update_windows.sh`: update Undo to the checked-out code
-  (optionally `--pull` first) and restart the daemon, whichever way it runs (systemd user or
-  system service, plain `undo start`; on Windows by building and silently running the
-  installer).
-- Documentation: a docs index (`docs/README.md`) and a development guide (`docs/DEVELOPMENT.md`,
-  including how to try changes on a real install with the update scripts). The same navigation
-  bar and related links are now on every page. Troubleshooting is regrouped by area and covers
-  the problems seen in real installs.
-- New app icon: a bold counter-clockwise arrow ring with a violet-to-blue gradient on a light
-  squircle tile.
-- `exclusions.defaults_version`: existing installs receive defaults added by newer versions once,
-  on upgrade. A default you removed is never added back.
-
-### Changed
-
-- App: *Stop tracking* on *Overview* now deletes the folder's recorded history, after a
-  confirmation that says how much (`undo untrack --purge` does the same). Before, it only paused
-  the folder, exactly like *Pause*. *Pause* stops recording and keeps everything. Neither touches
-  the files in the folder.
-
-### Fixed
-
-- Comparing two versions showed every line as changed when only the line endings differed
-  (CRLF vs LF). Lines are now compared without their endings, and the change of line-ending
-  style is reported as a note.
-- The CLI crashed with `UnicodeEncodeError` after finishing its work when the console used a
-  legacy code page (for example output piped in Git Bash). Unencodable characters now print as `?`.
-- Windows: `undo service install` failed with "schtasks failed: ERROR: Access is denied" for
-  users without administrator rights, because Windows only lets administrators create a
-  scheduled task that starts at sign-in. The installer ran the same command hidden, so its
-  *Start the Undo daemon when I sign in* option silently did nothing. Autostart now uses the
-  per-user Run key (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `Undo`), which needs no
-  elevation and appears under *Settings > Apps > Startup*. The command also starts the daemon
-  right away, and removes the old *Undo Daemon* task if an earlier build created one.
-  `undo service status` shows the registered command.
-- The daemon's 10-minute database checkpoint failed every time with "database table is locked"
-  (shown on the Overview page). It ran inside the write transaction SQLAlchemy opens, where
-  SQLite refuses checkpoints. It now runs outside a transaction and trims the WAL file. No data
-  was affected: SQLite's own automatic checkpoints kept running.
-- `undo track .` (or any relative path) tracked the daemon's working directory instead of the
-  folder you were in when the daemon was running; under systemd that is your home directory.
-  The CLI now resolves the path before sending it.
-- Installed builds refuse to track Undo's own program folder (`%LOCALAPPDATA%\Programs\Undo`),
-  as they already refused its data folder.
-
 ## [1.0.0] - 2026-11-24
 
 First release.
@@ -90,6 +24,24 @@ First release.
   preview before anything is deleted.
 - Exclusion rules: built-in, default and your own (`undo exclude`). Hidden-file and file-size
   limits are configurable.
+- Default exclusions for installed and built packages, which change constantly and are not
+  your work: Python wheels and eggs (`*.whl`, `*.egg`, `*.egg-info/`, `.eggs/`), environments
+  (`venv/`, `site-packages/`, `__pypackages__/`, `.nox/`), `*.pyc`/`*.pyo`; Node package stores
+  (`.npm/`, `.pnpm-store/`, `.yarn/`, `bower_components/`, `jspm_packages/`); Rust build output
+  and homes (`target/`, `.cargo/`, `.rustup/`, `*.crate`). Later versions add new defaults to
+  existing installs once, on upgrade (`exclusions.defaults_version`); a default you removed is
+  never added back.
+- Undo refuses to track its own data folder and, in installed builds, its program folder
+  (`%LOCALAPPDATA%\Programs\Undo`).
+- Side-by-side comparison of two versions in the app, `undo diff` and `undo tui`, like an editor's
+  git diff: old on the left, new on the right, changed characters highlighted, `+added -removed`
+  counts. The app can switch to an inline view; `undo diff -u` prints a unified diff. Lines are
+  compared without their endings, so a CRLF/LF change is reported as a note instead of marking
+  every line as changed.
+- Sorting for files, history and snapshots in the app, `undo tui` and the CLI. Each sort key
+  starts in its natural order (names A to Z, times newest first, sizes and counts largest first)
+  and can be reversed. Files are sorted by the daemon before paging
+  (`GET /files?sort=&descending=`).
 
 #### Storage
 
@@ -113,6 +65,8 @@ First release.
   the destination, and no partial or temporary file is left behind.
 - `--dry-run` shows exactly what a restore would do.
 - Recover deleted files and folders (`undo recover`).
+- Roll back a tracked folder (or a subfolder) to a point in time, with a preview first; no
+  snapshot needed (`undo restore FOLDER --at TIME`, or *Roll back* on the app's *Overview*).
 
 #### Daemon
 
@@ -136,11 +90,12 @@ First release.
 - `undo` command (Typer + Rich) with these command groups:
   - setup: `init`, `config`, `track`, `untrack`, `roots`, `scan`, `skipped`
   - daemon: `start`, `stop`, `restart`, `status`, `doctor`, `logs`, `service`
-  - history: `history`, `versions`, `log`, `search`, `show`, `diff`, `cat`
+  - history: `history`, `versions`, `files`, `log`, `search`, `show`, `diff`, `cat`
   - recovery: `restore`, `recover`
   - groups of subcommands: `snapshot`, `storage`, `exclude`, `settings`
   
-  Most commands take `--json` for scripts.
+  Most commands take `--json` for scripts. Lists sort with `--sort KEY` and `--reverse`
+  (`undo files`, `undo log`, `undo snapshot list`).
 - The CLI talks to the daemon when one is running, and works directly on the data otherwise.
 - `undo tui`: a full-screen terminal dashboard (Textual) with tracked folders, files, history,
   restore, snapshots, storage and settings. It works over SSH.
@@ -151,6 +106,9 @@ First release.
   themes). Its screens are Overview, Files, History, Snapshots, Storage and Settings, plus version
   details, preview, diff and a restore dialog that shows what will happen first.
 - Starts the daemon automatically when it is not running (`daemon.autostart`).
+- Click a tracked folder on *Overview* to see its files. *Pause* stops recording a folder and
+  keeps its history; *Stop tracking* also deletes the folder's recorded history, after a
+  confirmation that says how much (`undo untrack --purge`). Neither touches the files themselves.
 - Native folder picker with no Flutter plugins, so Windows Developer Mode is not needed to build.
 - App icon: a bold counter-clockwise arrow ring with a violet-to-blue gradient on a light tile
   (`gui/assets/undo.ico`, `gui/assets/undo.png`).
@@ -168,11 +126,16 @@ First release.
   Windows service.
 - Development tooling: uv workspace, `Makefile` and `make.sh`, `scripts/dev.py`, `build.py`,
   `release.py`.
+- `scripts/update_linux.sh` and `scripts/update_windows.sh`: update Undo to the checked-out code
+  (optionally `--pull` first) and restart the daemon, whichever way it runs (systemd user or
+  system service, plain `undo start`; on Windows by building and silently running the
+  installer).
 
 #### Documentation
 
 - `README.md`, plus guides in `docs/`: architecture, storage, CLI, API (with the generated
-  OpenAPI file), installation, recovery and troubleshooting.
+  OpenAPI file), installation, recovery and troubleshooting, with an index (`docs/README.md`)
+  and a development guide (`docs/DEVELOPMENT.md`). Every page has the same navigation bar.
 
 ### Known limitations
 
@@ -189,5 +152,4 @@ First release.
 - The desktop app cannot connect to a daemon on another machine: the API listens on `127.0.0.1`
   only. On servers, use `undo tui` over SSH.
 
-[Unreleased]: https://github.com/Madhur-Prakash/Undo/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/Madhur-Prakash/Undo/releases/tag/v1.0.0
