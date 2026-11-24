@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Undo
+Comment=File version history: recover overwritten and deleted files
+Exec=env UNDO_CLI=@UNDO_CLI@ @EXEC@
+Icon=@ICON@
+Terminal=false
+Categories=Utility;FileTools;

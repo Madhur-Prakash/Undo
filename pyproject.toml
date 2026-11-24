@@ -1,0 +1,52 @@
+[project]
+name = "undo-workspace"
+version = "1.0.0"
+description = "Development workspace for Undo (backend + CLI)."
+requires-python = ">=3.12"
+dependencies = ["undo-core", "undo-cli"]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["backend", "cli"]
+
+[tool.uv.sources]
+undo-core = { workspace = true }
+undo-cli = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    "pytest-timeout>=2.3",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+pythonpath = ["backend/tests"]
+markers = [
+    "stress: long-running stress tests",
+    "integration: integration tests",
+]
+timeout = 300
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["gui"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["B008", "RUF012", "SIM102", "SIM105", "SIM108", "SIM117", "E501"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = false
+check_untyped_defs = true
+packages = ["undo_core", "undo_cli"]
+plugins = ["pydantic.mypy"]
+mypy_path = ["backend/src", "cli"]

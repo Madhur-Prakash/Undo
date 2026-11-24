@@ -1,0 +1,31 @@
+# Undo daemon - systemd unit template.
+#
+# User service (recommended, no root):   ~/.config/systemd/user/undo.service
+#   systemctl --user daemon-reload && systemctl --user enable --now undo
+#   loginctl enable-linger "$USER"   # keep running after logout (servers)
+#
+# System service for a dedicated account: /etc/systemd/system/undo.service
+#   add "User=<account>" under [Service] and use WantedBy=multi-user.target
+#
+# install_service.sh fills in @UNDO_PYTHON@ and @UNDO_HOME@.
+
+[Unit]
+Description=Undo file version history daemon
+Documentation=file://@UNDO_DOCS@
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=@UNDO_PYTHON@ -m undo_core.daemon --data-dir @UNDO_HOME@
+Environment=UNDO_HOME=@UNDO_HOME@
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=60
+# Be gentle on low-resource servers.
+Nice=10
+IOSchedulingClass=idle
+MemoryHigh=512M
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

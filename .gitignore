@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+
+# Local Undo data used during development
+.dev-home/
+undo-data/
+
+# Flutter
+gui/undo_desktop/.dart_tool/
+gui/undo_desktop/build/
+gui/undo_desktop/.flutter-plugins
+gui/undo_desktop/.flutter-plugins-dependencies
+gui/undo_desktop/**/ephemeral/
+gui/installer/Undo-Setup-*.exe
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
