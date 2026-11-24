@@ -26,6 +26,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   elevation and appears under *Settings > Apps > Startup*. The command also starts the daemon
   right away, and removes the old *Undo Daemon* task if an earlier build created one.
   `undo service status` shows the registered command.
+- The daemon's 10-minute database checkpoint failed every time with "database table is locked"
+  (shown on the Overview page). It ran inside the write transaction SQLAlchemy opens, where
+  SQLite refuses checkpoints. It now runs outside a transaction and trims the WAL file. No data
+  was affected: SQLite's own automatic checkpoints kept running.
+- Installed builds refuse to track Undo's own program folder (`%LOCALAPPDATA%\Programs\Undo`),
+  as they already refused its data folder.
 
 ## [1.0.0] - 2026-11-24
 

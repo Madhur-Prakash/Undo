@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
@@ -116,6 +117,13 @@ def _as_time(value: datetime | str | None) -> datetime | None:
     return parse_timestamp(value)  # user text: naive means local time
 
 
+def _installed_app_dir() -> Path | None:
+    """Undo's own program folder in an installed (frozen) build: <app> holding backend/undo.exe."""
+    if not getattr(sys, "frozen", False):
+        return None
+    return Path(sys.executable).resolve().parent.parent
+
+
 class UndoService:
     def __init__(self, ctx: UndoContext, hooks: DaemonHooks | None = None) -> None:
         self.ctx = ctx
@@ -205,6 +213,11 @@ class UndoService:
         data_dir = self.ctx.paths.data_dir
         if is_within(target, data_dir):
             raise InvalidInputError("Cannot track Undo's own data directory or anything inside it")
+        app_dir = _installed_app_dir()
+        if app_dir is not None and is_within(target, app_dir):
+            raise InvalidInputError(
+                f"{target} is inside Undo's program folder ({app_dir}); choose a folder with your files"
+            )
         with self.db.write() as s:
             for existing in RootRepository(s).all():
                 if path_key(existing.absolute_path) == path_key(str(target)):

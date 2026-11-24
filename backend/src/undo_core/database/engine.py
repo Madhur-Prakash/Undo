@@ -87,9 +87,23 @@ class Database:
                 problems.append(f"foreign_key_check: {tuple(row)}")
         return problems
 
-    def checkpoint(self) -> None:
+    def checkpoint(self) -> tuple[int, int, int] | None:
+        """Copy the WAL back into the database and truncate it.
+
+        Runs on the raw DB-API connection: going through SQLAlchemy would start a
+        transaction (our "begin" hook issues BEGIN IMMEDIATE), and SQLite refuses to
+        checkpoint inside one ("database table is locked"). Returns SQLite's
+        (busy, wal_pages, checkpointed_pages); busy=1 just means a reader was active and
+        the next run will finish the job.
+        """
         with self.write_engine.connect() as conn:
-            conn.exec_driver_sql("PRAGMA wal_checkpoint(TRUNCATE)")
+            cursor = conn.connection.dbapi_connection.cursor()  # type: ignore[union-attr]
+            try:
+                cursor.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                row = cursor.fetchone()
+            finally:
+                cursor.close()
+        return (int(row[0]), int(row[1]), int(row[2])) if row else None
 
     def close(self) -> None:
         self.write_engine.dispose()
