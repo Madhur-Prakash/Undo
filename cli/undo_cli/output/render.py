@@ -379,3 +379,21 @@ def diff_summary(d: dict[str, Any]) -> Text:
     if d.get("note"):
         out.append(f" · {d['note']}", style="dim")
     return out
+
+
+def forget_result(r: dict[str, Any]) -> Panel:
+    rows: list[tuple[str, Any]] = [
+        ("target", r["target"]),
+        ("versions removed" if not r["dry_run"] else "versions to remove", r["versions_removed"]),
+        ("files affected", r["files_affected"]),
+    ]
+    if r.get("before"):
+        rows.append(("older than", when(r["before"])))
+    if r.get("files_removed"):
+        rows.append(("files with no history left", r["files_removed"]))
+    if r.get("versions_kept_in_snapshots"):
+        rows.append(("kept (in a snapshot)", r["versions_kept_in_snapshots"]))
+    if r.get("note"):
+        rows.append(("note", r["note"]))
+    title = "Forget (dry run)" if r["dry_run"] else "Forget"
+    return kv_panel(title, rows, style="yellow" if r["dry_run"] else "red")

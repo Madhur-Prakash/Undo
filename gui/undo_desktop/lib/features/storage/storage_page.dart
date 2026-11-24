@@ -127,6 +127,37 @@ class _StoragePageState extends ConsumerState<StoragePage> {
                     icon: const Icon(Icons.rule),
                     label: const Text('Preview retention'),
                   ),
+                  OutlinedButton.icon(
+                    onPressed: _busy
+                        ? null
+                        : () async {
+                            final preview = await runAction(context, () => api.retention(dryRun: true));
+                            if (preview == null || !context.mounted) return;
+                            if (preview.versionsRemoved == 0) {
+                              showMessage(context, 'Retention: nothing to remove with the current policy');
+                              return;
+                            }
+                            final ok = await confirmDialog(
+                              context,
+                              title: 'Apply retention now?',
+                              message: '${preview.versionsRemoved} old versions of ${preview.filesAffected} files will be '
+                                  'removed from history, freeing about ${formatBytes(preview.estimatedReclaimBytes)}.\n\n'
+                                  'Your files are not touched. The latest version of every file, the last content of '
+                                  'deleted files and snapshot versions are always kept.',
+                              confirm: 'Remove old versions',
+                              destructive: true,
+                            );
+                            if (!ok) return;
+                            await _run(() async {
+                              final r = await api.retention(dryRun: false);
+                              final g = await api.gc(dryRun: false);
+                              return 'Retention removed ${r.versionsRemoved} versions; '
+                                  'garbage collection freed ${formatBytes(g.reclaimedBytes)}';
+                            });
+                          },
+                    icon: const Icon(Icons.auto_delete_outlined),
+                    label: const Text('Apply retention now'),
+                  ),
                 ]),
                 if (_busy) const Padding(padding: EdgeInsets.only(top: 12), child: LinearProgressIndicator()),
                 if (_lastResult != null) Padding(padding: const EdgeInsets.only(top: 12), child: SelectableText(_lastResult!)),

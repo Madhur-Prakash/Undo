@@ -7,6 +7,7 @@ import '../../core/models/models.dart';
 import '../../core/providers/providers.dart';
 import '../../core/util/format.dart';
 import '../../shared/widgets.dart';
+import '../history/forget_dialog.dart';
 import '../history/version_details_dialog.dart';
 import '../restore/restore_dialog.dart';
 
@@ -49,6 +50,21 @@ class FileHistoryPage extends ConsumerWidget {
                 if (res != null) refreshAll(ref);
               },
             ),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.delete_sweep_outlined),
+            label: const Text('Delete history'),
+            onPressed: () async {
+              final r = await showForgetDialog(context, path: f.absolutePath);
+              if (r == null || !context.mounted) return;
+              showMessage(context, 'Removed ${r.versionsRemoved} version(s). ${r.note ?? ''}'.trim());
+              refreshAll(ref);
+              if (r.filesRemoved > 0) {
+                context.go('/files'); // the file has no history left
+              } else {
+                ref.invalidate(fileHistoryProvider(fileId));
+              }
+            },
+          ),
           IconButton(tooltip: 'Refresh', onPressed: () => ref.invalidate(fileHistoryProvider(fileId)), icon: const Icon(Icons.refresh)),
         ],
       ),
@@ -88,6 +104,17 @@ class FileHistoryPage extends ConsumerWidget {
                     tooltip: 'Compare with version ${older.id}',
                     onPressed: () => showDiff(context, ref, older.id, v.id),
                     icon: const Icon(Icons.compare_arrows),
+                  ),
+                if (i > 0) // the latest version keeps the file restorable; "Delete history" removes it
+                  IconButton(
+                    tooltip: 'Delete this version',
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () async {
+                      if (await deleteSingleVersion(context, ref, v)) {
+                        ref.invalidate(fileHistoryProvider(fileId));
+                        refreshAll(ref);
+                      }
+                    },
                   ),
                 if (v.hasContent)
                   TextButton.icon(

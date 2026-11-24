@@ -49,6 +49,7 @@ from undo_core.domain import (
     FileHistory,
     FileInfo,
     FilePage,
+    ForgetResult,
     GCReport,
     HealthInfo,
     ReconcileReport,
@@ -99,6 +100,12 @@ from undo_core.versioning.diff import (
     line_ending_note,
     side_by_side,
     unified_diff,
+)
+from undo_core.versioning.forget import (
+    apply_forget,
+    plan_delete_versions,
+    plan_forget,
+    skip_records_cleanup,
 )
 from undo_core.versioning.retention import apply_retention, plan_retention
 
@@ -790,6 +797,103 @@ class UndoService:
             files_affected=plan.files_affected,
             estimated_reclaim_bytes=plan.estimated_reclaim_bytes,
             removed_version_ids=sorted(plan.remove)[:1000],
+        )
+
+    # ================================================================== forgetting history
+    def forget(
+        self,
+        path: str,
+        *,
+        before: datetime | str | None = None,
+        dry_run: bool = False,
+    ) -> ForgetResult:
+        """Remove the history of one file, or of every file below a folder.
+
+        Without ``before`` every version goes (the file is forgotten; if it still exists it is
+        captured again as a new file by the next scan). With ``before`` only versions older than
+        that time go, and each file's latest version is always kept. Snapshot versions stay.
+        """
+        cutoff = _as_time(before)
+        with self.db.read() as s:
+            target = resolve_path(s, path)
+            root_id = target.root.id
+            if target.file_id is not None:
+                file_ids = [target.file_id]
+                prefix_key: str | None = None
+            else:
+                prefix_key = (
+                    path_key(target.relative_path).rstrip("/") if target.relative_path else None
+                )
+                q = select(File.id).where(File.root_id == root_id)
+                if prefix_key:
+                    q = q.where(
+                        (File.path_key == prefix_key)
+                        | File.path_key.startswith(prefix_key + "/", autoescape=True)
+                    )
+                file_ids = list(s.scalars(q))
+        if not file_ids:
+            raise NotFoundError(f"No history recorded for {path}")
+        with self.db.read() if dry_run else self.db.write() as s:
+            plan = plan_forget(s, file_ids, before=cutoff)
+            removed_files: set[int] = set()
+            if not dry_run:
+                removed_files = apply_forget(s, plan)
+                if cutoff is None and target.file_id is None:
+                    skip_records_cleanup(s, root_id, prefix_key)
+        notes = []
+        if plan.kept_in_snapshots:
+            notes.append(
+                f"{plan.kept_in_snapshots} version(s) kept because they belong to a snapshot; "
+                "delete the snapshot to remove them"
+            )
+        if not dry_run and plan.remove:
+            notes.append("run garbage collection (undo storage gc) to free the disk space")
+            if cutoff is None:
+                if self.hooks is not None:
+                    rel = target.relative_path
+                    prefix = (
+                        rel
+                        if target.file_id is None
+                        else (rel.rsplit("/", 1)[0] if "/" in rel else "")
+                    )
+                    self.hooks.request_reconcile(root_id, prefix)
+                    notes.append("files that still exist are being captured again as new history")
+                else:
+                    notes.append("files that still exist are captured again by the next scan")
+        log.info(
+            "history forgotten",
+            extra={"path": path, "versions": len(plan.remove), "dry_run": dry_run},
+        )
+        return ForgetResult(
+            dry_run=dry_run,
+            target=path,
+            before=cutoff,
+            files_examined=plan.files_examined,
+            files_affected=len(plan.files_affected),
+            files_removed=len(plan.files_emptied) if dry_run else len(removed_files),
+            versions_removed=len(plan.remove),
+            versions_kept_in_snapshots=plan.kept_in_snapshots,
+            removed_version_ids=sorted(plan.remove)[:1000],
+            note="; ".join(notes) or None,
+        )
+
+    def delete_versions(self, version_ids: list[int], *, dry_run: bool = False) -> ForgetResult:
+        """Delete individual versions. The latest version of a file and snapshot versions are refused."""
+        with self.db.read() if dry_run else self.db.write() as s:
+            plan = plan_delete_versions(s, version_ids)
+            if not dry_run:
+                apply_forget(s, plan)
+        log.info("versions deleted", extra={"versions": sorted(plan.remove), "dry_run": dry_run})
+        return ForgetResult(
+            dry_run=dry_run,
+            target=", ".join(f"v{v}" for v in sorted(plan.remove)),
+            files_examined=plan.files_examined,
+            files_affected=len(plan.files_affected),
+            versions_removed=len(plan.remove),
+            removed_version_ids=sorted(plan.remove),
+            note=None
+            if dry_run
+            else "run garbage collection (undo storage gc) to free the disk space",
         )
 
     # ================================================================== exclusions

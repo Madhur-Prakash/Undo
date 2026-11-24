@@ -281,6 +281,21 @@ class RetentionReport(_Model):
     removed_version_ids: list[int] = Field(default_factory=list)
 
 
+class ForgetResult(_Model):
+    """Result of removing history on purpose (a file, a folder, older versions, single versions)."""
+
+    dry_run: bool
+    target: str
+    before: datetime | None = None
+    files_examined: int = 0
+    files_affected: int = 0
+    files_removed: int = 0  # file records with no history left
+    versions_removed: int = 0
+    versions_kept_in_snapshots: int = 0
+    removed_version_ids: list[int] = Field(default_factory=list)
+    note: str | None = None
+
+
 class ExclusionInfo(_Model):
     id: int | None = None
     pattern: str

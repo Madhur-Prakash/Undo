@@ -67,6 +67,10 @@ First release.
 - Recover deleted files and folders (`undo recover`).
 - Roll back a tracked folder (or a subfolder) to a point in time, with a preview first; no
   snapshot needed (`undo restore FOLDER --at TIME`, or *Roll back* on the app's *Overview*).
+- Remove history on purpose: a file's or a folder's whole history, only versions older than a
+  date (each file's latest version is kept), or single versions. Previewed first; snapshot
+  versions are kept; files are never touched (`undo forget`, `undo delete-versions`, or
+  *Delete history* in the app).
 
 #### Daemon
 

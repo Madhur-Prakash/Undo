@@ -6,7 +6,15 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 
 from undo_core.api.dependencies import get_service
-from undo_core.domain import FileHistory, VersionContent, VersionDetail, VersionDiff, VersionInfo
+from undo_core.api.schemas import DeleteVersionsRequest, ForgetRequest
+from undo_core.domain import (
+    FileHistory,
+    ForgetResult,
+    VersionContent,
+    VersionDetail,
+    VersionDiff,
+    VersionInfo,
+)
 from undo_core.service import UndoService
 
 router = APIRouter(tags=["history"])
@@ -34,6 +42,20 @@ def activity(
     service: UndoService = Depends(get_service),
 ) -> list[VersionInfo]:
     return service.activity(limit=limit, root_id=root_id, since=since)
+
+
+@router.post("/history/forget", response_model=ForgetResult)
+def forget(body: ForgetRequest, service: UndoService = Depends(get_service)) -> ForgetResult:
+    """Remove the history of a file or a folder (optionally only versions older than `before`)."""
+    return service.forget(body.path, before=body.before, dry_run=body.dry_run)
+
+
+@router.post("/versions/delete", response_model=ForgetResult)
+def delete_versions(
+    body: DeleteVersionsRequest, service: UndoService = Depends(get_service)
+) -> ForgetResult:
+    """Delete individual versions (not a file's latest version, not snapshot versions)."""
+    return service.delete_versions(body.version_ids, dry_run=body.dry_run)
 
 
 @router.get("/versions/diff", response_model=VersionDiff)

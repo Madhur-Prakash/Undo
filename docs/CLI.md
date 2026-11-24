@@ -72,6 +72,8 @@ Every `undo` command, option and setting. For step-by-step recipes see
 | `undo show VERSION` | Version details: hash, compression, storage, references, neighbours. |
 | `undo diff A B [-u]` | Side-by-side diff of two text versions: old on the left, new on the right, changed characters highlighted, `+added -removed` summary. `-u` (or a terminal under 100 columns) prints a unified diff. Line-ending changes (CRLF/LF) are ignored and reported in the summary. |
 | `undo cat VERSION` | Print a text version. |
+| `undo forget PATH [--before TIME] [--dry-run] [-y]` | Remove the history of one file or one folder. With `--before` (ISO or relative: `30d`, `2w`) only older versions go and each file's latest version is kept. Shows a preview and asks first. Snapshot versions are kept. Files that still exist start a new history. |
+| `undo delete-versions ID... [-y]` | Delete individual versions. Refuses a file's latest version (use `forget`) and versions in a snapshot. |
 
 ## Restoration
 

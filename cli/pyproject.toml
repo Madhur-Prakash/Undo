@@ -3,6 +3,7 @@ name = "undo-cli"
 version = "1.0.0"
 description = "Undo command line interface and Textual terminal dashboard."
 license = { text = "MIT" }
+authors = [{ name = "Madhur Prakash Mangal" }]
 requires-python = ">=3.12"
 dependencies = [
     "undo-core",

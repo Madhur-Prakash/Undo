@@ -58,6 +58,8 @@ OPS: dict[str, tuple[str, str, str]] = {
     "verify_storage": ("POST", "/storage/verify", "body"),
     "garbage_collect": ("POST", "/storage/gc", "body"),
     "apply_retention": ("POST", "/storage/retention", "body"),
+    "forget": ("POST", "/history/forget", "body"),
+    "delete_versions": ("POST", "/versions/delete", "body"),
     "list_exclusions": ("GET", "/exclusions", "query"),
     "add_exclusion": ("POST", "/exclusions", "body"),
     "remove_exclusion": ("POST", "/exclusions/remove", "body"),
@@ -80,6 +82,8 @@ WRITE_OPS = {
     "verify_storage",
     "garbage_collect",
     "apply_retention",
+    "forget",
+    "delete_versions",
     "add_exclusion",
     "remove_exclusion",
     "set_setting",
@@ -93,6 +97,8 @@ _DRY_RUN_CAPABLE = {
     "restore_snapshot",
     "garbage_collect",
     "apply_retention",
+    "forget",
+    "delete_versions",
 }
 
 _ERRORS: dict[str, type[E.UndoError]] = {

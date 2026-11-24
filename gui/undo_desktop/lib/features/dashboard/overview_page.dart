@@ -7,6 +7,7 @@ import '../../core/models/models.dart';
 import '../../core/providers/providers.dart';
 import '../../core/util/format.dart';
 import '../../shared/widgets.dart';
+import '../history/forget_dialog.dart';
 import '../history/version_details_dialog.dart';
 import '../restore/rollback_dialog.dart';
 
@@ -213,6 +214,16 @@ class _RootsCard extends ConsumerWidget {
                   icon: Icon(r.enabled ? Icons.pause_circle_outline : Icons.play_circle_outline),
                   onPressed: () async {
                     await runAction(context, () => api.setRootEnabled(r.id, !r.enabled));
+                    refreshAll(ref);
+                  },
+                ),
+                IconButton(
+                  tooltip: 'Delete history of this folder or a subfolder (all, or only old versions)',
+                  icon: const Icon(Icons.delete_sweep_outlined),
+                  onPressed: () async {
+                    final res = await showForgetDialog(context, path: r.path, folderRoot: r.path);
+                    if (res == null || !context.mounted) return;
+                    showMessage(context, 'Removed ${res.versionsRemoved} version(s) of ${res.filesAffected} file(s). ${res.note ?? ''}'.trim());
                     refreshAll(ref);
                   },
                 ),

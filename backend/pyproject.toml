@@ -3,6 +3,7 @@ name = "undo-core"
 version = "1.0.0"
 description = "Undo backend: content-addressed file version history, filesystem monitoring daemon and local API."
 license = { text = "MIT" }
+authors = [{ name = "Madhur Prakash Mangal" }]
 requires-python = ">=3.12"
 dependencies = [
     "sqlalchemy>=2.0.30",

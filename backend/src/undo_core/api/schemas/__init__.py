@@ -70,6 +70,22 @@ class DryRunRequest(BaseModel):
     dry_run: bool = True
 
 
+class ForgetRequest(BaseModel):
+    path: str = Field(
+        ..., description="A file (current or former path) or a folder inside a tracked root"
+    )
+    before: str | None = Field(
+        None,
+        description="Only remove versions older than this (ISO or relative: 30d). Latest is kept.",
+    )
+    dry_run: bool = False
+
+
+class DeleteVersionsRequest(BaseModel):
+    version_ids: list[int] = Field(..., min_length=1)
+    dry_run: bool = False
+
+
 class ExclusionRequest(BaseModel):
     pattern: str
     root: str | int | None = None

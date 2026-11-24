@@ -548,3 +548,26 @@ class ReconcileReport {
   final int skipped;
   final int failed;
 }
+
+/// Result of removing history on purpose (a file, a folder, older versions, single versions).
+class ForgetResult {
+  ForgetResult.fromJson(Map<String, dynamic> j)
+    : dryRun = j['dry_run'] as bool,
+      target = j['target'] as String,
+      before = _dt(j['before']),
+      filesExamined = _i(j['files_examined']),
+      filesAffected = _i(j['files_affected']),
+      filesRemoved = _i(j['files_removed']),
+      versionsRemoved = _i(j['versions_removed']),
+      versionsKeptInSnapshots = _i(j['versions_kept_in_snapshots']),
+      note = j['note'] as String?;
+  final bool dryRun;
+  final String target;
+  final DateTime? before;
+  final int filesExamined;
+  final int filesAffected;
+  final int filesRemoved;
+  final int versionsRemoved;
+  final int versionsKeptInSnapshots;
+  final String? note;
+}

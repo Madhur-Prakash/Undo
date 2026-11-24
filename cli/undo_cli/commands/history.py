@@ -51,6 +51,71 @@ def register(app: typer.Typer) -> None:
         render.console.print(render.versions_table(data["versions"]))
 
     @app.command()
+    def forget(
+        ctx: typer.Context,
+        path: str = typer.Argument(
+            ..., help="A file (current or former path) or a folder in a tracked root"
+        ),
+        before: str | None = typer.Option(
+            None,
+            "--before",
+            help="Only remove versions older than this: ISO (2026-10-01) or relative (30d, 2w). "
+            "Each file's latest version is kept.",
+        ),
+        dry_run: bool = typer.Option(
+            False, "--dry-run", "-n", help="Only show what would be removed"
+        ),
+        yes: bool = typer.Option(False, "--yes", "-y", help="Do not ask for confirmation"),
+        json_out: bool = typer.Option(False, "--json"),
+    ) -> None:
+        """Remove the history of one file or one folder (or only its older versions).
+
+        Your files are not touched. Snapshot versions are kept. Without --before the file's whole
+        history goes; if the file still exists it is captured again as a new file.
+        """
+        target = _abs(path)
+        plan = call(ctx, "forget", path=target, before=before, dry_run=True)
+        if json_out and dry_run:
+            render.print_json(plan)
+            return
+        render.console.print(render.forget_result(plan))
+        if dry_run or plan["versions_removed"] == 0:
+            return
+        if not yes:
+            typer.confirm(
+                f"Permanently remove {plan['versions_removed']} version(s) of {plan['files_affected']} file(s)?",
+                abort=True,
+            )
+        result = call(ctx, "forget", path=target, before=before, dry_run=False)
+        if json_out:
+            render.print_json(result)
+            return
+        render.console.print(render.forget_result(result))
+
+    @app.command("delete-versions")
+    def delete_versions(
+        ctx: typer.Context,
+        version_ids: list[int] = typer.Argument(
+            ..., help="Version ids (from `undo versions PATH`)"
+        ),
+        yes: bool = typer.Option(False, "--yes", "-y", help="Do not ask for confirmation"),
+        json_out: bool = typer.Option(False, "--json"),
+    ) -> None:
+        """Delete individual versions of a file.
+
+        A file's latest version cannot be deleted this way (use `undo forget PATH`), and versions in
+        a snapshot are refused until the snapshot is deleted.
+        """
+        plan = call(ctx, "delete_versions", version_ids=version_ids, dry_run=True)
+        if not yes:
+            typer.confirm(f"Permanently delete {plan['target']}?", abort=True)
+        result = call(ctx, "delete_versions", version_ids=version_ids, dry_run=False)
+        if json_out:
+            render.print_json(result)
+            return
+        render.console.print(render.forget_result(result))
+
+    @app.command()
     def versions(
         ctx: typer.Context,
         path: str = typer.Argument(...),

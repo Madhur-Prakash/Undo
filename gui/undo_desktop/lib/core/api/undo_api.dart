@@ -127,6 +127,23 @@ class UndoApi {
         'dry_run': dryRun,
       })));
 
+  // ----------------------------------------------------------------- removing history
+  /// Remove the history of a file or folder; with [before], only versions older than that
+  /// (each file's latest version is kept). Same as `undo forget PATH [--before]`.
+  Future<ForgetResult> forget(String path, {DateTime? before, bool dryRun = true}) async =>
+      ForgetResult.fromJson(_m(await _req<Object>('POST', '/history/forget', body: {
+        'path': path,
+        'before': before?.toUtc().toIso8601String(),
+        'dry_run': dryRun,
+      })));
+
+  /// Delete individual versions (not a file's latest version, not snapshot versions).
+  Future<ForgetResult> deleteVersions(List<int> ids, {bool dryRun = false}) async =>
+      ForgetResult.fromJson(_m(await _req<Object>('POST', '/versions/delete', body: {
+        'version_ids': ids,
+        'dry_run': dryRun,
+      })));
+
   // ----------------------------------------------------------------- snapshots
   Future<List<SnapshotInfo>> snapshots() async =>
       _l(await _req<Object>('GET', '/snapshots')).map(SnapshotInfo.fromJson).toList();

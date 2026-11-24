@@ -58,7 +58,7 @@
 #define AppExe "Undo.exe"
 #define CliExe "undo.exe"
 #define DaemonExe "undo-daemon.exe"
-#define AppPublisher "Undo contributors"
+#define AppPublisher "Madhur Prakash Mangal"
 #define AppUrl "https://github.com/Madhur-Prakash/Undo"
 ; Held by the running desktop app (windows\runner\main.cpp), so Setup can ask to close it.
 #define AppMutexName "UndoDesktopRunning"
