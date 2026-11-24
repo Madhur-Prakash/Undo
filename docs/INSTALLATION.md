@@ -86,7 +86,11 @@ Later scans only look at files whose size or modification time changed, so they 
 
 ### 1. Install
 
-Run `Undo-Setup-<version>.exe`. It installs for your account only, needs no administrator rights,
+Download `Undo-Setup-<version>.exe` from the
+**[latest release](https://github.com/Madhur-Prakash/Undo/releases/latest)** (always the newest
+version; older ones are on the [Releases page](https://github.com/Madhur-Prakash/Undo/releases)).
+
+Run it. It installs for your account only, needs no administrator rights,
 and installs into `%LOCALAPPDATA%\Programs\Undo`. Keep the first two options ticked:
 
 | Option | Default | What it does |

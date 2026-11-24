@@ -122,7 +122,7 @@ uv installs for you.
 
 | Machine | How |
 |---|---|
-| **Windows 10/11** | Run `Undo-Setup-<version>.exe`, built from [`gui/installer/Undo.iss`](gui/installer/Undo.iss). It needs no admin rights or Python. It installs the app, the `undo` command and the daemon, and can start the daemon at sign-in. |
+| **Windows 10/11** | Download `Undo-Setup-<version>.exe` from the **[latest release](https://github.com/Madhur-Prakash/Undo/releases/latest)** and run it (or build it from [`gui/installer/Undo.iss`](gui/installer/Undo.iss)). It needs no admin rights or Python. It installs the app, the `undo` command and the daemon, and can start the daemon at sign-in. |
 | **Linux server** | Install with uv, `undo init`, `undo track /path`, then `undo service install` and `sudo loginctl enable-linger $USER`. Use `undo tui` over SSH. |
 | **Linux desktop** | Unpack the release archive from `python scripts/build.py` and run `./installer/install.sh`. It installs the app with a menu entry and the systemd user service. |
 
