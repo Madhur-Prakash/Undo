@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Sorting for files, history and snapshots, in the app (a *Sort* menu and a direction arrow),
+  `undo tui` (a *Sort* menu and *Reverse*) and the CLI (`--sort KEY`, `--reverse`). Each key
+  starts in its natural order: names A to Z, times newest first, sizes and counts largest first.
+  Files are sorted by the daemon before paging (`GET /files?sort=&descending=`).
+- `undo files`: list tracked files from the command line, with search, `--root`, `--deleted`
+  and sorting.
+- App: click a tracked folder on *Overview* to open *Files* showing only that folder.
 - Default exclusions for installed and built packages, which change constantly and are not
   your work: Python wheels and eggs (`*.whl`, `*.egg`, `*.egg-info/`, `.eggs/`), environments
   (`venv/`, `site-packages/`, `__pypackages__/`, `.nox/`), `*.pyc`/`*.pyo`; Node package stores
@@ -30,6 +37,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   squircle tile.
 - `exclusions.defaults_version`: existing installs receive defaults added by newer versions once,
   on upgrade. A default you removed is never added back.
+
+### Changed
+
+- App: *Stop tracking* on *Overview* now deletes the folder's recorded history, after a
+  confirmation that says how much (`undo untrack --purge` does the same). Before, it only paused
+  the folder, exactly like *Pause*. *Pause* stops recording and keeps everything. Neither touches
+  the files in the folder.
 
 ### Fixed
 

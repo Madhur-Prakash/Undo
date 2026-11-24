@@ -66,7 +66,8 @@ Every `undo` command, option and setting. For step-by-step recipes see
 |---|---|
 | `undo history PATH [-n N]` | File summary, former paths and every version (operation, time, size, hash). |
 | `undo versions PATH` | Compact list of version ids. |
-| `undo log [-n N] [--since 1d] [--root R]` | Recent changes across roots. |
+| `undo files [QUERY] [--root R] [-d] [-s KEY] [-r]` | List tracked files. `--sort` by `path` (default), `modified`, `size`, `version` (latest change) or `versions` (number of versions); `-d` includes deleted files. |
+| `undo log [-n N] [--since 1d] [--root R] [-s KEY] [-r]` | Recent changes across roots, newest first. `--sort` by `time`, `path`, `size` or `operation`. |
 | `undo search QUERY` | Match current and former paths. |
 | `undo show VERSION` | Version details: hash, compression, storage, references, neighbours. |
 | `undo diff A B [-u]` | Side-by-side diff of two text versions: old on the left, new on the right, changed characters highlighted, `+added -removed` summary. `-u` (or a terminal under 100 columns) prints a unified diff. Line-ending changes (CRLF/LF) are ignored and reported in the summary. |
@@ -91,7 +92,7 @@ Every `undo` command, option and setting. For step-by-step recipes see
 | Command | Description |
 |---|---|
 | `undo snapshot create --name NAME [--root R] [-d TEXT] [--no-scan]` | Scan the root, then record every file's current version. |
-| `undo snapshot list [--root R]` | List snapshots. |
+| `undo snapshot list [--root R] [-s KEY] [-r]` | List snapshots, newest first. `--sort` by `created`, `name`, `root`, `files` or `size`. |
 | `undo snapshot show ID\|NAME` | Files in the snapshot. |
 | `undo snapshot diff A B` | Added / removed / modified between two snapshots. |
 | `undo snapshot restore ID\|NAME [--to DIR] [--path SUBDIR] [--overwrite] [--dry-run]` | Restore. |
