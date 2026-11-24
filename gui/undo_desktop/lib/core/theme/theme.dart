@@ -23,7 +23,10 @@ class UndoTheme {
         ),
       ),
       dividerTheme: DividerThemeData(color: scheme.outlineVariant, space: 1),
-      inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder(), isDense: true),
+      inputDecorationTheme: const InputDecorationTheme(
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
       listTileTheme: const ListTileThemeData(dense: true),
     );
   }

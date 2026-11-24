@@ -159,20 +159,25 @@ def register(app: typer.Typer) -> None:
         ctx: typer.Context,
         version_a: int = typer.Argument(...),
         version_b: int = typer.Argument(...),
+        unified: bool = typer.Option(
+            False, "--unified", "-u", help="Classic unified diff instead of side by side"
+        ),
         json_out: bool = typer.Option(False, "--json"),
     ) -> None:
-        """Compare two versions (unified diff for text files)."""
+        """Compare two versions side by side (old left, new right), like an editor's diff.
+
+        Narrow terminals (under 100 columns) and --unified get a unified diff instead.
+        Line-ending changes (CRLF/LF) are ignored and reported in the summary.
+        """
         d = call(ctx, "diff_versions", a=version_a, b=version_b)
         if json_out:
             render.print_json(d)
             return
-        if d.get("note"):
-            render.console.print(f"[dim]{d['note']}[/dim]")
-        if d.get("diff"):
+        if d.get("hunks") and not unified and render.console.width >= 100:
+            render.console.print(render.side_by_side_diff(d))
+        elif d.get("diff"):
             render.console.print(Syntax(d["diff"], "diff", theme="ansi_dark", word_wrap=True))
-        render.console.print(
-            f"[dim]size change: {d['size_delta']:+d} bytes{' (diff truncated)' if d.get('truncated') else ''}[/dim]"
-        )
+        render.console.print(render.diff_summary(d))
 
     @app.command()
     def cat(ctx: typer.Context, version_id: int = typer.Argument(...)) -> None:

@@ -346,12 +346,35 @@ class StatusInfo(_Model):
     logical_bytes: int = 0
 
 
+class DiffRow(_Model):
+    """One row of a side-by-side diff: the old line (a) next to the new line (b)."""
+
+    kind: str  # equal | delete | insert | change
+    a_no: int | None = None
+    a_text: str | None = None
+    b_no: int | None = None
+    b_text: str | None = None
+    a_spans: list[tuple[int, int]] = Field(default_factory=list)  # changed chars [start, end)
+    b_spans: list[tuple[int, int]] = Field(default_factory=list)
+
+
+class DiffHunk(_Model):
+    a_start: int
+    a_count: int
+    b_start: int
+    b_count: int
+    rows: list[DiffRow]
+
+
 class VersionDiff(_Model):
     a: VersionInfo
     b: VersionInfo
     identical: bool
     is_text: bool
-    diff: str | None = None
+    diff: str | None = None  # unified text
+    hunks: list[DiffHunk] = Field(default_factory=list)  # side by side
+    added: int = 0
+    removed: int = 0
     truncated: bool = False
     size_delta: int
     note: str | None = None

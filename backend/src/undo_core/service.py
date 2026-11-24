@@ -42,6 +42,8 @@ from undo_core.database.repositories import (
 from undo_core.domain import (
     AddRootResult,
     BlobInfo,
+    DiffHunk,
+    DiffRow,
     DoctorCheck,
     ExclusionInfo,
     FileHistory,
@@ -90,7 +92,14 @@ from undo_core.utils.logging import get_logger
 from undo_core.utils.timeutil import parse_timestamp, to_aware, to_db, utcnow
 from undo_core.versioning import history, snapshots
 from undo_core.versioning.capture import RootRef
-from undo_core.versioning.diff import MAX_DIFF_BYTES, TEXT_SAMPLE, is_probably_text, unified_diff
+from undo_core.versioning.diff import (
+    MAX_DIFF_BYTES,
+    TEXT_SAMPLE,
+    is_probably_text,
+    line_ending_note,
+    side_by_side,
+    unified_diff,
+)
 from undo_core.versioning.retention import apply_retention, plan_retention
 
 log = get_logger(__name__)
@@ -440,7 +449,30 @@ class UndoService:
         text, truncated = unified_diff(
             data_a, data_b, f"{va.version.relative_path}@v{a}", f"{vb.version.relative_path}@v{b}"
         )
-        return VersionDiff(**base, is_text=True, diff=text, truncated=truncated)
+        sbs = side_by_side(data_a, data_b)
+        hunks = [
+            DiffHunk(
+                a_start=h.a_start,
+                a_count=h.a_count,
+                b_start=h.b_start,
+                b_count=h.b_count,
+                rows=[DiffRow(**vars(r)) for r in h.rows],
+            )
+            for h in sbs.hunks
+        ]
+        note = line_ending_note(data_a, data_b)
+        if not hunks:
+            note = (note + "; no other changes") if note else "no line changes"
+        return VersionDiff(
+            **base,
+            is_text=True,
+            diff=text,
+            hunks=hunks,
+            added=sbs.added,
+            removed=sbs.removed,
+            truncated=truncated or sbs.truncated,
+            note=note,
+        )
 
     def activity(
         self, *, limit: int = 100, root_id: int | None = None, since: str | None = None

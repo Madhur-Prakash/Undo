@@ -69,7 +69,7 @@ Every `undo` command, option and setting. For step-by-step recipes see
 | `undo log [-n N] [--since 1d] [--root R]` | Recent changes across roots. |
 | `undo search QUERY` | Match current and former paths. |
 | `undo show VERSION` | Version details: hash, compression, storage, references, neighbours. |
-| `undo diff A B` | Unified diff of two text versions. |
+| `undo diff A B [-u]` | Side-by-side diff of two text versions: old on the left, new on the right, changed characters highlighted, `+added -removed` summary. `-u` (or a terminal under 100 columns) prints a unified diff. Line-ending changes (CRLF/LF) are ignored and reported in the summary. |
 | `undo cat VERSION` | Print a text version. |
 
 ## Restoration
@@ -151,7 +151,7 @@ Every `undo` command, option and setting. For step-by-step recipes see
 | Everywhere | `1`–`7` switch tabs (Dashboard, Roots, Files, History, Snapshots, Storage, Settings) · `F5` / `Ctrl+R` refresh · `q` quit |
 | Roots | `a` add · `s` scan · `e` enable/disable · `x` untrack |
 | Files | type to search · tick *Include deleted* · `Enter` opens the file's history |
-| File history | `v` view content · `d` diff with previous · `i` details · `r` restore · `Esc` back |
+| File history | `v` view content · `d` compare with previous (side by side) · `i` details · `r` restore · `Esc` back |
 | Snapshots | `c` create · `d` compare · `r` restore · `x` delete |
 
 Restores always show a **Preview** first, and replacing existing files needs the *Overwrite* tick.

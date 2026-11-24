@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from rich.syntax import Syntax
+from rich.console import Group
 from textual import work
 from textual.app import ComposeResult
 from textual.containers import Vertical, VerticalScroll
@@ -12,6 +12,7 @@ from textual.screen import ModalScreen, Screen
 from textual.widgets import DataTable, Footer, Header, Label, Static
 from undo_core.utils.errors import UndoError
 
+from undo_cli.output import render
 from undo_cli.output.render import short_hash, size, when
 from undo_cli.tui.screens.restore import RestoreModal
 from undo_cli.tui.widgets.common import DataPane
@@ -187,11 +188,11 @@ class FileHistoryScreen(Screen[None]):
             self.app.call_from_thread(self.app.notify, exc.message, severity="error")
             return
         body: Any = (
-            Syntax(d["diff"], "diff", word_wrap=True)
-            if d.get("diff")
-            else (d.get("note") or "No differences")
+            Group(render.side_by_side_diff(d), render.diff_summary(d))
+            if d.get("hunks")
+            else render.diff_summary(d)
         )
-        self.app.call_from_thread(self.app.push_screen, TextModal(f"Diff v{a} -> v{b}", body))
+        self.app.call_from_thread(self.app.push_screen, TextModal(f"Compare v{a} -> v{b}", body))
 
     def action_view(self) -> None:
         v = self._selected()

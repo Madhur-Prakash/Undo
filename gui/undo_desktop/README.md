@@ -17,7 +17,7 @@ contents itself; every action goes through the daemon's local API (`127.0.0.1`, 
 |---|---|
 | Overview | Daemon status, tracked folders (add, pause, rescan, remove), storage summary, recent activity |
 | Files | Browse a tracked folder, open any file's history, restore a version |
-| History | Recent changes across all tracked folders; version details, content preview and diff against another version |
+| History | Recent changes across all tracked folders; version details, content preview, and a side-by-side comparison with the previous version (switchable to inline) |
 | Snapshots | Create, compare, restore and delete named snapshots of a folder |
 | Storage | Usage and deduplication savings, verify stored data, apply retention, garbage collection |
 | Settings | All daemon settings (capture, retention, exclusions, monitoring) |

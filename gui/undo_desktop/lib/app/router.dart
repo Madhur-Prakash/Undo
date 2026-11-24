@@ -28,7 +28,8 @@ final router = GoRouter(
   initialLocation: '/overview',
   routes: [
     ShellRoute(
-      builder: (context, state, child) => AppShell(location: state.uri.path, child: child),
+      builder: (context, state, child) =>
+          AppShell(location: state.uri.path, child: child),
       routes: [
         GoRoute(path: '/overview', builder: (_, _) => const OverviewPage()),
         GoRoute(
@@ -37,7 +38,9 @@ final router = GoRouter(
           routes: [
             GoRoute(
               path: ':id',
-              builder: (_, state) => FileHistoryPage(fileId: int.parse(state.pathParameters['id']!)),
+              builder: (_, state) => FileHistoryPage(
+                fileId: int.parse(state.pathParameters['id']!),
+              ),
             ),
           ],
         ),

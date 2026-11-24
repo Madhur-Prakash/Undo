@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   (`venv/`, `site-packages/`, `__pypackages__/`, `.nox/`), `*.pyc`/`*.pyo`; Node package stores
   (`.npm/`, `.pnpm-store/`, `.yarn/`, `bower_components/`, `jspm_packages/`); Rust build output
   and homes (`target/`, `.cargo/`, `.rustup/`, `*.crate`).
+- Side-by-side comparison of two versions in the app, `undo diff` and `undo tui`, like an editor's
+  git diff: old on the left, new on the right, changed characters highlighted, `+added -removed`
+  counts. The app can switch to an inline view; `undo diff -u` prints a unified diff.
 - `scripts/update_linux.sh` and `scripts/update_windows.sh`: update Undo to the checked-out code
   (optionally `--pull` first) and restart the daemon, whichever way it runs (systemd user or
   system service, plain `undo start`; on Windows by building and silently running the
@@ -28,6 +31,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Fixed
 
+- Comparing two versions showed every line as changed when only the line endings differed
+  (CRLF vs LF). Lines are now compared without their endings, and the change of line-ending
+  style is reported as a note.
+- The CLI crashed with `UnicodeEncodeError` after finishing its work when the console used a
+  legacy code page (for example output piped in Git Bash). Unencodable characters now print as `?`.
 - Windows: `undo service install` failed with "schtasks failed: ERROR: Access is denied" for
   users without administrator rights, because Windows only lets administrators create a
   scheduled task that starts at sign-in. The installer ran the same command hidden, so its

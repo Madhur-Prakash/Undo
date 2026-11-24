@@ -10,7 +10,8 @@ class UndoApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final connected = ref.watch(connectionProvider).phase == ConnectionPhase.connected;
+    final connected =
+        ref.watch(connectionProvider).phase == ConnectionPhase.connected;
     final mode = connected ? ref.watch(themeModeProvider) : ThemeMode.system;
     return MaterialApp.router(
       title: 'Undo',

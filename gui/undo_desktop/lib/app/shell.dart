@@ -31,42 +31,52 @@ class AppShell extends ConsumerWidget {
     final conn = ref.watch(connectionProvider);
     final wide = MediaQuery.sizeOf(context).width >= 1100;
     return Scaffold(
-      body: Row(children: [
-        NavigationRail(
-          extended: wide,
-          minExtendedWidth: 200,
-          selectedIndex: _index(),
-          onDestinationSelected: (i) => context.go(navItems[i].path),
-          leading: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Image.asset('assets/undo.png', width: 28, height: 28),
-              if (wide) ...[
-                const SizedBox(width: 8),
-                Text('Undo', style: Theme.of(context).textTheme.titleLarge),
-              ],
-            ]),
-          ),
-          trailing: Expanded(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(padding: const EdgeInsets.only(bottom: 16), child: _ConnectionBadge(wide: wide)),
-            ),
-          ),
-          destinations: [
-            for (var i = 0; i < navItems.length; i++)
-              NavigationRailDestination(
-                icon: Icon(_icons[i].$1),
-                selectedIcon: Icon(_icons[i].$2),
-                label: Text(navItems[i].label),
+      body: Row(
+        children: [
+          NavigationRail(
+            extended: wide,
+            minExtendedWidth: 200,
+            selectedIndex: _index(),
+            onDestinationSelected: (i) => context.go(navItems[i].path),
+            leading: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset('assets/undo.png', width: 28, height: 28),
+                  if (wide) ...[
+                    const SizedBox(width: 8),
+                    Text('Undo', style: Theme.of(context).textTheme.titleLarge),
+                  ],
+                ],
               ),
-          ],
-        ),
-        const VerticalDivider(width: 1),
-        Expanded(
-          child: conn.phase == ConnectionPhase.connected ? child : const _OfflinePage(),
-        ),
-      ]),
+            ),
+            trailing: Expanded(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _ConnectionBadge(wide: wide),
+                ),
+              ),
+            ),
+            destinations: [
+              for (var i = 0; i < navItems.length; i++)
+                NavigationRailDestination(
+                  icon: Icon(_icons[i].$1),
+                  selectedIcon: Icon(_icons[i].$2),
+                  label: Text(navItems[i].label),
+                ),
+            ],
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: conn.phase == ConnectionPhase.connected
+                ? child
+                : const _OfflinePage(),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -86,11 +96,19 @@ class _ConnectionBadge extends ConsumerWidget {
       ConnectionPhase.offline => 'Daemon offline',
     };
     return Tooltip(
-      message: ok ? 'Connected to ${conn.api!.endpoint.baseUrl} (pid ${conn.api!.endpoint.pid})' : (conn.message ?? label),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        StatusDot(ok: ok),
-        if (wide) ...[const SizedBox(width: 8), Text(label, style: Theme.of(context).textTheme.labelMedium)],
-      ]),
+      message: ok
+          ? 'Connected to ${conn.api!.endpoint.baseUrl} (pid ${conn.api!.endpoint.pid})'
+          : (conn.message ?? label),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          StatusDot(ok: ok),
+          if (wide) ...[
+            const SizedBox(width: 8),
+            Text(label, style: Theme.of(context).textTheme.labelMedium),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -102,43 +120,63 @@ class _OfflinePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final conn = ref.watch(connectionProvider);
     final notifier = ref.read(connectionProvider.notifier);
-    final busy = conn.phase == ConnectionPhase.connecting || conn.phase == ConnectionPhase.starting;
+    final busy =
+        conn.phase == ConnectionPhase.connecting ||
+        conn.phase == ConnectionPhase.starting;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: Card(
           child: Padding(
             padding: const EdgeInsets.all(28),
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Icon(busy ? Icons.sync : Icons.cloud_off_outlined),
-                const SizedBox(width: 12),
-                Text(busy ? (conn.message ?? 'Connecting ...') : 'Not connected',
-                    style: Theme.of(context).textTheme.titleLarge),
-              ]),
-              const SizedBox(height: 12),
-              if (busy) const LinearProgressIndicator(),
-              if (!busy) ...[
-                SelectableText(conn.message ?? 'The Undo daemon is not running.'),
-                const SizedBox(height: 12),
-                SelectableText(
-                  'Data directory: ${Discovery.dataDir()}\n'
-                  'The app starts the daemon with the `undo` command (set UNDO_CLI to its full path if it is not on PATH). '
-                  'You can also run `undo start` in a terminal or install autostart with `undo service install`.',
-                  style: Theme.of(context).textTheme.bodySmall,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(busy ? Icons.sync : Icons.cloud_off_outlined),
+                    const SizedBox(width: 12),
+                    Text(
+                      busy
+                          ? (conn.message ?? 'Connecting ...')
+                          : 'Not connected',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                Row(children: [
-                  FilledButton.icon(
-                    onPressed: notifier.startDaemon,
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('Start daemon'),
+                const SizedBox(height: 12),
+                if (busy) const LinearProgressIndicator(),
+                if (!busy) ...[
+                  SelectableText(
+                    conn.message ?? 'The Undo daemon is not running.',
                   ),
-                  const SizedBox(width: 12),
-                  OutlinedButton.icon(onPressed: notifier.connect, icon: const Icon(Icons.refresh), label: const Text('Retry')),
-                ]),
+                  const SizedBox(height: 12),
+                  SelectableText(
+                    'Data directory: ${Discovery.dataDir()}\n'
+                    'The app starts the daemon with the `undo` command (set UNDO_CLI to its full path if it is not on PATH). '
+                    'You can also run `undo start` in a terminal or install autostart with `undo service install`.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      FilledButton.icon(
+                        onPressed: notifier.startDaemon,
+                        icon: const Icon(Icons.play_arrow),
+                        label: const Text('Start daemon'),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        onPressed: notifier.connect,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ],
               ],
-            ]),
+            ),
           ),
         ),
       ),

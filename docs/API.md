@@ -51,7 +51,7 @@ random port is used). The actual address is in `<data>/daemon.json`.
 | `GET /versions/{id}` | | `VersionDetail` |
 | `GET /versions/{id}/preview` | `max_bytes` | `VersionContent` |
 | `GET /versions/{id}/content` | | raw bytes (streamed) |
-| `GET /versions/diff?a=&b=` | | `VersionDiff` |
+| `GET /versions/diff?a=&b=` | | `VersionDiff`: `hunks` (side-by-side rows with changed-character spans), unified `diff` text, `added`, `removed`, `note` |
 | `POST /restore` | `{path, version_id?, at?, before_version_id?, destination?, overwrite, dry_run}` | `RestoreResult` |
 | `POST /restore/version` | `{version_id, destination?, overwrite, dry_run}` | `RestoreResult` |
 | `POST /restore/recover` | `{path, destination?, overwrite, dry_run}` | `RestoreResult` |

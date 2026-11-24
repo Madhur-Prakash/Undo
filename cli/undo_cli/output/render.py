@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime
 from typing import Any
 
@@ -13,6 +14,23 @@ from rich.table import Table
 from rich.text import Text
 from undo_core.utils.sizes import format_size
 
+
+def _tolerant_streams() -> None:
+    """Never crash on a character the console cannot encode (spinners, box lines, "·").
+
+    A legacy Windows console or a pipe may use a code page such as cp1252; those characters
+    then print as "?" instead of raising UnicodeEncodeError after the work is already done.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
+_tolerant_streams()
 console = Console()
 err_console = Console(stderr=True)
 
@@ -280,3 +298,84 @@ def storage_stats(st: dict[str, Any]) -> Panel:
         ("last retention", when(st.get("last_retention_at"))),
     ]
     return kv_panel("Storage", rows)
+
+
+# --------------------------------------------------------------------------- diffs
+DIFF_DEL = "on #3b1219"
+DIFF_DEL_STRONG = "bold on #8a2433"
+DIFF_ADD = "on #12321d"
+DIFF_ADD_STRONG = "bold on #1f7a3f"
+DIFF_EMPTY = "on grey11"
+
+
+def _diff_cell(text: str | None, kind: str, side: str, spans: list[Any]) -> Text:
+    if text is None:
+        return Text("", style=DIFF_EMPTY)
+    base, strong = (DIFF_DEL, DIFF_DEL_STRONG) if side == "a" else (DIFF_ADD, DIFF_ADD_STRONG)
+    line = Text(text)
+    if kind == "equal":
+        pass
+    elif kind == "change":
+        line.stylize(base)
+        for start, end in spans:
+            line.stylize(strong, start, end)
+    else:  # delete (left) or insert (right)
+        line.stylize(base)
+    line.expand_tabs(4)
+    return line
+
+
+def _diff_no(n: int | None, kind: str, side: str) -> Text:
+    if n is None:
+        return Text("", style=DIFF_EMPTY)
+    style = "dim"
+    if kind != "equal":
+        style = "red" if side == "a" else "green"
+    return Text(str(n), style=style)
+
+
+def side_by_side_diff(d: dict[str, Any]) -> Table:
+    """The comparison as two columns, old on the left and new on the right (like an editor)."""
+    a, b = d["a"], d["b"]
+    t = Table(box=box.SIMPLE_HEAD, expand=True, show_edge=False, pad_edge=False, padding=(0, 1))
+    t.add_column("", justify="right", style="dim", no_wrap=True, width=5)
+    t.add_column(
+        f"v{a['id']}  {a['relative_path']}  ({when(a['timestamp'])})",
+        ratio=1,
+        overflow="fold",
+        header_style="bold red",
+    )
+    t.add_column("", justify="right", style="dim", no_wrap=True, width=5)
+    t.add_column(
+        f"v{b['id']}  {b['relative_path']}  ({when(b['timestamp'])})",
+        ratio=1,
+        overflow="fold",
+        header_style="bold green",
+    )
+    for i, hunk in enumerate(d.get("hunks") or []):
+        if i:
+            t.add_section()
+        header = f"@@ -{hunk['a_start']},{hunk['a_count']} +{hunk['b_start']},{hunk['b_count']} @@"
+        t.add_row("", Text(header, style="cyan"), "", Text(header, style="cyan"))
+        for row in hunk["rows"]:
+            kind = row["kind"]
+            t.add_row(
+                _diff_no(row.get("a_no"), kind, "a"),
+                _diff_cell(row.get("a_text"), kind, "a", row.get("a_spans") or []),
+                _diff_no(row.get("b_no"), kind, "b"),
+                _diff_cell(row.get("b_text"), kind, "b", row.get("b_spans") or []),
+            )
+    return t
+
+
+def diff_summary(d: dict[str, Any]) -> Text:
+    out = Text()
+    out.append(f"+{d.get('added', 0)}", style="green")
+    out.append(" ")
+    out.append(f"-{d.get('removed', 0)}", style="red")
+    out.append(f" lines · size change {d['size_delta']:+d} bytes", style="dim")
+    if d.get("truncated"):
+        out.append(" · diff truncated", style="yellow")
+    if d.get("note"):
+        out.append(f" · {d['note']}", style="dim")
+    return out
