@@ -26,6 +26,7 @@ class StoragePane(DataPane):
             yield Button("GC preview", id="gc-preview")
             yield Button("Run GC", id="gc", variant="warning")
             yield Button("Retention preview", id="retention")
+            yield Button("Apply retention", id="retention-apply", variant="error")
         with VerticalScroll():
             yield Static(id="stats")
             yield Static(id="result")
@@ -46,6 +47,22 @@ class StoragePane(DataPane):
             self.run("garbage_collect", dry_run=True)
         elif bid == "retention":
             self.run("apply_retention", dry_run=True)
+        elif bid == "retention-apply":
+
+            def apply(ok: bool | None) -> None:
+                if ok:
+                    self.apply_retention_now()
+
+            self.app.push_screen(
+                ConfirmModal(
+                    "Remove old versions now, according to the retention policy, and free the space?\n"
+                    "The latest version of every file, deleted files' last content and snapshot "
+                    "versions are always kept. Use 'Retention preview' first to see the counts.",
+                    "Apply retention",
+                    "error",
+                ),
+                apply,
+            )
         elif bid == "gc":
 
             def confirmed(ok: bool | None) -> None:
@@ -58,6 +75,22 @@ class StoragePane(DataPane):
                 ),
                 confirmed,
             )
+
+    @work(thread=True, group="storage-op")
+    def apply_retention_now(self) -> None:
+        self.app.call_from_thread(self.app.notify, "Applying retention ...")
+        try:
+            r = self.backend.call("apply_retention", dry_run=False)
+            g = self.backend.call("garbage_collect", dry_run=False)
+        except UndoError as exc:
+            self.app.call_from_thread(self.app.notify, exc.message, severity="error")
+            return
+        text = (
+            f"[bold]Retention[/bold]: removed {r['versions_removed']} versions of "
+            f"{r['files_affected']} files · garbage collection freed {format_size(g['reclaimed_bytes'])}"
+        )
+        self.app.call_from_thread(self.query_one("#result", Static).update, text)
+        self.app.call_from_thread(self.reload)
 
     @work(thread=True, group="storage-op")
     def run(self, op: str, **kwargs: Any) -> None:

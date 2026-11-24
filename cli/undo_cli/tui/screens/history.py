@@ -15,6 +15,7 @@ from undo_core.utils.errors import UndoError
 from undo_cli import sorting
 from undo_cli.output import render
 from undo_cli.output.render import short_hash, size, when
+from undo_cli.tui.screens.forget import start_delete_version, start_forget
 from undo_cli.tui.screens.restore import RestoreModal
 from undo_cli.tui.widgets.common import DataPane, SortBar
 
@@ -98,6 +99,8 @@ class FileHistoryScreen(Screen[None]):
         ("d", "diff", "Diff with previous"),
         ("v", "view", "View content"),
         ("i", "info", "Version details"),
+        ("x", "delete_version", "Delete version"),
+        ("f", "forget", "Delete history"),
     ]
     DEFAULT_CSS = """
     FileHistoryScreen #summary { height: auto; padding: 1; }
@@ -139,7 +142,8 @@ class FileHistoryScreen(Screen[None]):
             f"{'[red]deleted ' + when(f['deleted_at']) + '[/red]' if f['is_deleted'] else '[green]live[/green]'} · "
             f"{f['version_count']} versions · size {size(f.get('size'))}"
             + (f"\n[dim]former paths: {', '.join(former)}[/dim]" if former else "")
-            + "\n[dim]r restore · d diff with previous · v view · i details · Esc back[/dim]"
+            + "\n[dim]r restore · d diff with previous · v view · i details · "
+            "x delete version · f delete history · Esc back[/dim]"
         )
         table = self.query_one(DataTable)
         table.clear()
@@ -232,6 +236,31 @@ class FileHistoryScreen(Screen[None]):
         self.app.call_from_thread(
             self.app.push_screen, TextModal(f"Version {version_id}", Text(body))
         )
+
+    def action_delete_version(self) -> None:
+        v = self._selected()
+        if not v or not self.data:
+            return
+        if v["id"] == self.data["versions"][0]["id"]:
+            self.app.notify(
+                "The latest version keeps the file restorable. Use f (Delete history) to remove it.",
+                severity="warning",
+            )
+            return
+        start_delete_version(self, v, on_done=self.load)
+
+    def action_forget(self) -> None:
+        if not self.data:
+            return
+        f = self.data["file"]
+
+        def done(result: dict[str, Any]) -> None:
+            if result.get("files_removed"):
+                self.app.pop_screen()  # no history left for this file
+            else:
+                self.load()
+
+        start_forget(self, f["absolute_path"], title=f"Delete history of {f['name']}", on_done=done)
 
     def action_info(self) -> None:
         v = self._selected()

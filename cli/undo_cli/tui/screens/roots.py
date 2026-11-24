@@ -11,6 +11,7 @@ from textual.widgets import Button, DataTable, Label
 from undo_core.utils.errors import UndoError
 
 from undo_cli.output.render import when
+from undo_cli.tui.screens.forget import start_forget
 from undo_cli.tui.widgets.common import ConfirmModal, DataPane, PromptModal
 
 
@@ -24,6 +25,7 @@ class RootsPane(DataPane):
         ("s", "scan", "Scan"),
         ("e", "toggle_root", "Enable/disable"),
         ("x", "untrack", "Untrack"),
+        ("f", "forget", "Delete history"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -121,6 +123,17 @@ class RootsPane(DataPane):
             ),
             done,
         )
+
+    def action_forget(self) -> None:
+        root = self._selected()
+        if root:
+            start_forget(
+                self,
+                root["path"],
+                title=f"Delete history in {root['path']}",
+                ask_path=True,
+                on_done=lambda _r: self.reload(),
+            )
 
     @work(thread=True, group="roots-op")
     def run_op(self, op: str, message: str, **kwargs: Any) -> None:

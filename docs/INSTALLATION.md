@@ -606,6 +606,8 @@ In `undo tui`:
 * **3** opens *Files*: search, then press **Enter** on a file to see its history.
 * On a version, press **v** to view it, **d** to diff it with the previous version, **i** for
   details, and **r** to restore it.
+* Press **x** to delete the selected version, or **f** to delete the file's history (all of it,
+  or only versions older than e.g. `30d`). Both preview and ask first.
 * The restore dialog shows a **Preview** before anything is written.
 
 Every command and option: [CLI.md](CLI.md). Getting files back in common situations:

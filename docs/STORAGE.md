@@ -139,13 +139,14 @@ undo storage gc --retention          # apply retention, then collect
 Besides retention, history can be removed by hand. Your files are never touched, and snapshot
 versions are always kept.
 
-| What | CLI | App |
-|---|---|---|
-| A file's whole history | `undo forget FILE` | file history › **Delete history** › *All history* |
-| A file's older versions | `undo forget FILE --before 30d` | file history › **Delete history** › *Only versions older than* |
-| A folder's (or subfolder's) history | `undo forget FOLDER [--before 30d]` | *Overview* › folder › **Delete history** (bin icon) › *Choose subfolder* |
-| Single versions | `undo delete-versions ID...` | file history › bin icon on the version |
-| A whole tracked folder, and stop tracking it | `undo untrack FOLDER --purge` | *Overview* › folder › ⊖ |
+| What | CLI | App | TUI |
+|---|---|---|---|
+| A file's whole history | `undo forget FILE` | file history › **Delete history** › *All history* | file history › `f`, leave the date empty |
+| A file's older versions | `undo forget FILE --before 30d` | file history › **Delete history** › *Only versions older than* | file history › `f`, enter `30d` |
+| A folder's (or subfolder's) history | `undo forget FOLDER [--before 30d]` | *Overview* › folder › **Delete history** (bin icon) › *Choose subfolder* | *Roots* › `f`, edit the folder path |
+| Single versions | `undo delete-versions ID...` | file history › bin icon on the version | file history › `x` |
+| A whole tracked folder, and stop tracking it | `undo untrack FOLDER --purge` | *Overview* › folder › ⊖ | *Roots* › `f`, then `x` |
+| Old versions by the retention policy, now | `undo storage gc --retention` | *Storage* › **Apply retention now** | *Storage* › **Apply retention** |
 
 * `--before` always keeps each file's latest version, so every file stays restorable.
 * Removing a file's whole history removes its record. If the file still exists, the next scan

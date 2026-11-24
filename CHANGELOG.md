@@ -21,7 +21,8 @@ First release.
 - Rename and move detection, so a file keeps one history across new names and folders.
 - Named snapshots of a whole folder, which can be compared and restored.
 - Retention rules that thin out old versions on a schedule (`retention.*` settings), with a
-  preview before anything is deleted.
+  preview before anything is deleted, and can be applied on demand (`undo storage gc --retention`,
+  *Apply retention now* in the app, *Apply retention* in the TUI).
 - Exclusion rules: built-in, default and your own (`undo exclude`). Hidden-file and file-size
   limits are configurable.
 - Default exclusions for installed and built packages, which change constantly and are not
@@ -69,8 +70,9 @@ First release.
   snapshot needed (`undo restore FOLDER --at TIME`, or *Roll back* on the app's *Overview*).
 - Remove history on purpose: a file's or a folder's whole history, only versions older than a
   date (each file's latest version is kept), or single versions. Previewed first; snapshot
-  versions are kept; files are never touched (`undo forget`, `undo delete-versions`, or
-  *Delete history* in the app).
+  versions are kept; files are never touched. Available everywhere: `undo forget` and
+  `undo delete-versions`, *Delete history* and the per-version delete in the app, and `f` / `x`
+  in the TUI.
 
 #### Daemon
 

@@ -160,10 +160,11 @@ setting below can also be changed on the app's **Settings** page; exclusion patt
 | Where | Keys |
 |---|---|
 | Everywhere | `1`–`7` switch tabs (Dashboard, Roots, Files, History, Snapshots, Storage, Settings) · `F5` / `Ctrl+R` refresh · `q` quit |
-| Roots | `a` add · `s` scan · `e` enable/disable · `x` untrack |
+| Roots | `a` add · `s` scan · `e` enable/disable · `x` untrack (history kept) · `f` delete history of the folder or a subfolder (all, or older than e.g. `30d`) |
 | Files | type to search · tick *Include deleted* · `Enter` opens the file's history |
-| File history | `v` view content · `d` compare with previous (side by side) · `i` details · `r` restore · `Esc` back |
+| File history | `v` view content · `d` compare with previous (side by side) · `i` details · `r` restore · `x` delete this version (not the latest) · `f` delete the file's history (all, or older than e.g. `30d`) · `Esc` back |
 | Snapshots | `c` create · `d` compare · `r` restore · `x` delete |
+| Storage | buttons: Verify · GC preview · Run GC · Retention preview · Apply retention (removes old versions now, then frees the space) |
 
 Restores always show a **Preview** first, and replacing existing files needs the *Overwrite* tick.
 

@@ -74,6 +74,9 @@ Think of Git, but for ordinary files, running quietly in the background.
 - **Snapshots**: named, metadata-only checkpoints of a whole folder; compare and restore them.
 - **Retention**: keep everything, the last N versions, N days, daily/weekly thinning, or a
   storage quota. Snapshots and the last content of deleted files are always protected.
+- **Remove history on purpose**: a file's or folder's whole history, only versions older than a
+  date, or single versions, always previewed first (`undo forget`, `undo delete-versions`, or
+  *Delete history* in the app and the TUI).
 - **Three interfaces, one backend**: `undo` CLI (Rich), `undo tui` (Textual) and a Flutter
   desktop app, all backed by the same authenticated local API.
 
