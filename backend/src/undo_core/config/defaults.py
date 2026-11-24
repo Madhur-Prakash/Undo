@@ -14,10 +14,16 @@ DEFAULT_CHUNK_SIZE = 4 * MIB
 DEFAULT_MAX_FILE_SIZE = 4 * GIB
 READ_BUFFER = 1 * MIB
 
-# Default exclusion patterns. Trailing "/" means "directory with this name".
-# These are deliberately limited to tool caches and VCS internals; users can
-# remove any of them with `undo settings set exclusions.defaults ...`.
-DEFAULT_EXCLUSIONS: list[str] = [
+# Default exclusion patterns. Trailing "/" means "directory with this name" (anywhere in a
+# tracked folder, with everything below it); other patterns match file or directory names.
+# They cover version-control internals, tool caches, temporary files and installed packages:
+# things that are regenerated, change constantly and are not your work. Remove any of them
+# with `undo exclude remove PATTERN` (or `undo settings set exclusions.defaults ...`).
+#
+# Version 1 is the original list. Each later version lists only the patterns it adds;
+# existing installs get those once on upgrade (see ExclusionSettings), and a pattern the
+# user removed is never added back.
+_DEFAULT_EXCLUSIONS_V1: list[str] = [
     ".git/",
     ".hg/",
     ".svn/",
@@ -37,6 +43,38 @@ DEFAULT_EXCLUSIONS: list[str] = [
     ".~lock.*#",
     ".DS_Store",
     "Thumbs.db",
+]
+
+DEFAULT_EXCLUSIONS_ADDED: dict[int, list[str]] = {
+    2: [
+        # Python and pip: built and downloaded packages, installed environments
+        "*.whl",
+        "*.egg",
+        "*.egg-info/",
+        ".eggs/",
+        "pip-wheel-metadata/",
+        "site-packages/",
+        "__pypackages__/",
+        "venv/",
+        ".nox/",
+        "*.pyc",
+        "*.pyo",
+        # Node: package-manager stores and installed packages (node_modules/ is in v1)
+        ".npm/",
+        ".pnpm-store/",
+        ".yarn/",
+        "bower_components/",
+        "jspm_packages/",
+        # Rust: Cargo build output and the Cargo/rustup homes (registry, toolchains)
+        "target/",
+        ".cargo/",
+        ".rustup/",
+        "*.crate",
+    ],
+}
+DEFAULT_EXCLUSIONS_VERSION: int = max(DEFAULT_EXCLUSIONS_ADDED)
+DEFAULT_EXCLUSIONS: list[str] = _DEFAULT_EXCLUSIONS_V1 + [
+    p for v in sorted(DEFAULT_EXCLUSIONS_ADDED) for p in DEFAULT_EXCLUSIONS_ADDED[v]
 ]
 
 # Built-in, non-removable exclusions: Undo's own temporary restore files.

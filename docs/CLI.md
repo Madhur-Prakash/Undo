@@ -127,7 +127,8 @@
 | `monitor.event_queue_size` | 10000 | bounded event queue |
 | `monitor.follow_symlinks` / `exclude_hidden` | false / false | |
 | `retention.*` | keep_all | see STORAGE.md |
-| `exclusions.defaults` | VCS dirs, caches, temp/swap files | |
+| `exclusions.defaults` | VCS dirs, tool caches, temp/swap files; Python wheels, eggs, `site-packages/`, `venv/`, `*.pyc`; Node `node_modules/`, `.npm/`, `.pnpm-store/`, `.yarn/`; Rust `target/`, `.cargo/`, `.rustup/`, `*.crate` | `undo exclude list` shows them all; `undo exclude remove PATTERN` drops one (e.g. `target/` if you keep your own folder named *target*) |
+| `exclusions.defaults_version` | 2 | which release of the default list yours is up to date with; new defaults are added once on upgrade, removed ones never come back |
 | `api.host` / `api.port` | 127.0.0.1 / 47821 | loopback only unless `api.allow_remote` |
 | `daemon.autostart` | true | GUI/TUI start the daemon when needed |
 | `daemon.gc_interval_seconds` / `gc_grace_seconds` | 86400 / 3600 | |

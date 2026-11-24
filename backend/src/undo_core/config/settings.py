@@ -71,6 +71,32 @@ class RetentionSettings(_Section):
 
 class ExclusionSettings(_Section):
     defaults: list[str] = Field(default_factory=lambda: list(d.DEFAULT_EXCLUSIONS))
+    defaults_version: int = Field(
+        d.DEFAULT_EXCLUSIONS_VERSION,
+        ge=1,
+        description="Which release of the default list `defaults` is up to date with.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _add_new_defaults(cls, data: Any) -> Any:
+        """Bring a saved list up to date with defaults added in newer Undo versions.
+
+        A config written before ``defaults_version`` existed is version 1. Only the patterns
+        each newer version introduced are appended, so a default the user removed stays removed.
+        """
+        if not isinstance(data, dict) or "defaults" not in data:
+            return data
+        try:
+            version = int(data.get("defaults_version", 1))
+        except (TypeError, ValueError):
+            version = 1
+        if version >= d.DEFAULT_EXCLUSIONS_VERSION:
+            return data
+        patterns = list(data["defaults"])
+        for v in range(version + 1, d.DEFAULT_EXCLUSIONS_VERSION + 1):
+            patterns += [p for p in d.DEFAULT_EXCLUSIONS_ADDED.get(v, []) if p not in patterns]
+        return {**data, "defaults": patterns, "defaults_version": d.DEFAULT_EXCLUSIONS_VERSION}
 
 
 class ApiSettings(_Section):

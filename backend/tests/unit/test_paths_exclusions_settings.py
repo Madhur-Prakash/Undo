@@ -94,6 +94,48 @@ def test_settings_store_validation(tmp_path: Path) -> None:
         store.set_value("nope.key", "1")
     store.set_value("exclusions.defaults", "a/,*.b")
     assert store.current.exclusions.defaults == ["a/", "*.b"]
+    # A list the user edited is never refilled with removed defaults.
+    assert SettingsStore(tmp_path / "config.json").current.exclusions.defaults == ["a/", "*.b"]
+
+
+def test_upgrade_adds_new_default_exclusions_once(tmp_path: Path) -> None:
+    import json
+
+    from undo_core.config import defaults as d
+
+    # A config saved by 1.0.0: no defaults_version, the user removed "*.tmp".
+    old = [p for p in d.DEFAULT_EXCLUSIONS if p not in d.DEFAULT_EXCLUSIONS_ADDED[2]]
+    old.remove("*.tmp")
+    (tmp_path / "config.json").write_text(json.dumps({"exclusions": {"defaults": old}}))
+    current = SettingsStore(tmp_path / "config.json").current.exclusions
+    assert current.defaults_version == d.DEFAULT_EXCLUSIONS_VERSION
+    assert "*.whl" in current.defaults and "target/" in current.defaults
+    assert "*.tmp" not in current.defaults  # removed by the user: stays removed
+    assert len(current.defaults) == len(set(current.defaults))
+
+
+def test_package_directories_and_wheels_are_excluded(tmp_path: Path) -> None:
+    from undo_core.config import defaults as d
+    from undo_core.filesystem.exclusions import ExclusionMatcher, ExclusionRule
+
+    m = ExclusionMatcher(
+        [ExclusionRule(p, "default") for p in d.DEFAULT_EXCLUSIONS],
+        root_path=tmp_path,
+        protected_dirs=[],
+    )
+    for rel in (
+        "dist/undo-1.0.0-py3-none-any.whl",
+        "app/.venv/Lib/site-packages/x.py",
+        "venv/lib/python3.12/site-packages/pkg/__init__.py",
+        "pkg.egg-info/PKG-INFO",
+        "web/node_modules/react/index.js",
+        "web/.pnpm-store/v3/files/00/abc",
+        "crate/target/debug/app.exe",
+        "home/.cargo/registry/cache/serde-1.0.0.crate",
+    ):
+        assert m.check(rel, is_dir=False), rel
+    for rel in ("src/main.rs", "notes/report.docx", "web/package.json", "Cargo.toml"):
+        assert m.check(rel, is_dir=False) is None, rel
 
 
 def test_sizes_and_times() -> None:

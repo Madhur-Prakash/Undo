@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+### Added
+
+- Default exclusions for installed and built packages, which change constantly and are not
+  your work: Python wheels and eggs (`*.whl`, `*.egg`, `*.egg-info/`, `.eggs/`), environments
+  (`venv/`, `site-packages/`, `__pypackages__/`, `.nox/`), `*.pyc`/`*.pyo`; Node package stores
+  (`.npm/`, `.pnpm-store/`, `.yarn/`, `bower_components/`, `jspm_packages/`); Rust build output
+  and homes (`target/`, `.cargo/`, `.rustup/`, `*.crate`).
+- `exclusions.defaults_version`: existing installs receive defaults added by newer versions once,
+  on upgrade. A default you removed is never added back.
+
 ## [1.0.0] - 2026-11-24
 
 First release.
