@@ -235,8 +235,8 @@ If you see *"EndUpdateResource failed, try excluding the Output folder from your
 compile again: an antivirus scan briefly locked the new setup file.
 
 The version comes from `gui/undo_desktop/pubspec.yaml`. `python scripts/release.py X.Y.Z` updates
-it together with the Python packages. The icon is `gui/assets/undo.ico`, drawn by
-`scripts/make_icon.py`.
+it together with the Python packages. The icon is `gui/assets/undo.ico` (the
+same design as `gui/assets/undo.png` and `gui/undo_desktop/assets/undo.png`).
 
 ### Machine-wide Windows service (optional, advanced)
 

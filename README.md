@@ -282,4 +282,12 @@ make lint typecheck
 make build      # wheels, desktop bundle, portable archive in dist/
 ```
 
+| Script | Purpose |
+|---|---|
+| [scripts/dev.py](scripts/dev.py) | Task runner behind `make` and `./make.sh` |
+| [scripts/build.py](scripts/build.py) | Python wheels, desktop build, Linux release archive |
+| [scripts/release.py](scripts/release.py) | `python scripts/release.py X.Y.Z` sets the version everywhere |
+| [scripts/update_linux.sh](scripts/update_linux.sh) | Update a Linux install to the checked-out code and restart the daemon (`--pull` to `git pull` first) |
+| [scripts/update_windows.sh](scripts/update_windows.sh) | Build the Windows installer from the checked-out code and install it silently (Git Bash) |
+
 License: MIT (see [LICENSE](LICENSE)). Changes in each version: [CHANGELOG.md](CHANGELOG.md).

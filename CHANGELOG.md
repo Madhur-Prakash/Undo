@@ -124,8 +124,8 @@ First release.
   details, preview, diff and a restore dialog that shows what will happen first.
 - Starts the daemon automatically when it is not running (`daemon.autostart`).
 - Native folder picker with no Flutter plugins, so Windows Developer Mode is not needed to build.
-- App icon: a bold counter-clockwise arrow ring with a violet-to-blue gradient on a light tile (`gui/assets/undo.ico`, drawn by
-  `scripts/make_icon.py`).
+- App icon: a bold counter-clockwise arrow ring with a violet-to-blue gradient on a light tile
+  (`gui/assets/undo.ico`, `gui/assets/undo.png`).
 
 #### Installation and packaging
 
