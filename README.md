@@ -9,7 +9,9 @@ Every version of every file in the folders you choose, kept automatically.</p>
 
 <p>
   <a href="CHANGELOG.md"><img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-3D5A80?style=flat-square"></a>
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green?style=flat-square"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Madhur-Prakash/Undo?style=flat-square"></a>
+  <a href="https://github.com/Madhur-Prakash/Undo/commits"><img alt="Last commit" src="https://img.shields.io/github/last-commit/Madhur-Prakash/Undo?style=flat-square"></a>
+  <a href="https://github.com/Madhur-Prakash/Undo/issues"><img alt="Issues" src="https://img.shields.io/github/issues/Madhur-Prakash/Undo?style=flat-square"></a>
   <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white">
   <img alt="Windows 10/11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?style=flat-square&logo=windows&logoColor=white">
   <img alt="Linux" src="https://img.shields.io/badge/Linux-systemd-FCC624?style=flat-square&logo=linux&logoColor=black">
@@ -31,7 +33,8 @@ Every version of every file in the folders you choose, kept automatically.</p>
   <a href="docs/CLI.md">CLI reference</a> &middot;
   <a href="gui/undo_desktop/README.md">Desktop app</a> &middot;
   <a href="#documentation">Documentation</a> &middot;
-  <a href="CHANGELOG.md">Changelog</a>
+  <a href="CHANGELOG.md">Changelog</a> &middot;
+  <a href="https://github.com/Madhur-Prakash/Undo/issues">Report an issue</a>
 </p>
 
 </div>
@@ -125,7 +128,7 @@ The Linux steps have not been run on a Linux machine yet.
 Development checkout (needs [uv](https://docs.astral.sh/uv/)):
 
 ```sh
-git clone <this repo> undo && cd undo
+git clone https://github.com/Madhur-Prakash/Undo.git && cd Undo
 uv sync --all-packages           # creates .venv with backend + CLI + dev tools
 uv run undo --help
 ```

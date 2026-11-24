@@ -134,5 +134,5 @@ First release.
 - The desktop app cannot connect to a daemon on another machine: the API listens on `127.0.0.1`
   only. On servers, use `undo tui` over SSH.
 
-[Unreleased]: https://github.com/OWNER/undo/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/OWNER/undo/releases/tag/v1.0.0
+[Unreleased]: https://github.com/Madhur-Prakash/Undo/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Madhur-Prakash/Undo/releases/tag/v1.0.0

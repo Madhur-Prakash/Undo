@@ -132,12 +132,15 @@ export PATH="$HOME/.local/bin:$PATH"          # also add this line to ~/.bashrc
 
 Then use **either** a copy of the repository **or** a release archive.
 
-**From the repository:** copy it to the server (`git clone`, `rsync` or `scp`), then from its
-folder run:
+**From the repository** ([github.com/Madhur-Prakash/Undo](https://github.com/Madhur-Prakash/Undo)):
 
 ```sh
+git clone https://github.com/Madhur-Prakash/Undo.git && cd Undo
 uv tool install --python 3.12 ./cli --with ./backend
 ```
+
+Without `git` on the server, download the source zip from the repository page (*Code >
+Download ZIP*), or copy a checkout with `rsync`/`scp`.
 
 **From a release archive:** run `python scripts/build.py` on any Linux machine with uv. It writes
 `dist/undo-linux.tar.gz`. Copy that to the server, then:
@@ -219,8 +222,8 @@ listens on `127.0.0.1` only and needs the token in the data directory. Use `undo
 
 ### Updating and removing
 
-* **Update:** get the new code or archive, run the same `uv tool install` command again with
-  `--force` (or rerun `install.sh`), then restart the service: `systemctl --user restart undo`
+* **Update:** `git pull` (or get the new archive), run the same `uv tool install` command again
+  with `--force` (or rerun `install.sh`), then restart the service: `systemctl --user restart undo`
   or `sudo systemctl restart undo`.
 * **Remove:** run `undo service uninstall`, or `sudo services/linux/uninstall_service.sh --system`
   for a system service. Then run `uv tool uninstall undo-cli`. With a release archive,
@@ -263,6 +266,7 @@ To build only the app: install `clang cmake ninja-build pkg-config libgtk-3-dev`
 ## From source (development)
 
 ```sh
+git clone https://github.com/Madhur-Prakash/Undo.git && cd Undo
 uv sync --all-packages          # .venv with backend, CLI and dev tools (Python 3.12 via .python-version)
 uv run undo init
 uv run undo --help
