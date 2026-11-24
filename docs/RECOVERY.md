@@ -2,9 +2,10 @@
 
 > **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · [CLI](CLI.md) · **Recovery** · [Troubleshooting](TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · [API](API.md)
 
-Getting files back, and exactly what Undo promises when it writes them. Command details are in
-the [CLI reference](CLI.md#restoration); the dashboard way is in
-[CLI › Terminal UI](CLI.md#terminal-ui).
+Getting files back, and exactly what Undo promises when it writes them.
+
+* Command details: [CLI reference › Restoration](CLI.md#restoration).
+* The dashboard way: [CLI › Terminal UI](CLI.md#terminal-ui).
 
 ## A typical restore
 
@@ -72,11 +73,14 @@ At every daemon start (`startup_recovery`), while holding the exclusive lock:
 
 The result is visible in `undo status --json` (`daemon.recovery`) and the GUI's daemon card.
 
-Writes are crash-safe by construction: data is written to staging, fsynced, verified and atomically
-published before the metadata transaction commits, so a crash at any point leaves either the
-previous consistent state or the new one. SQLite in WAL mode with `synchronous=NORMAL` can lose
-the last committed transaction on power loss (never corrupt); the next reconciliation re-captures
-any such change from the live file.
+Writes are crash-safe by construction:
+
+* Data is written to staging, fsynced, verified and atomically published **before** the metadata
+  transaction commits.
+* So a crash at any point leaves either the previous consistent state or the new one.
+* SQLite in WAL mode with `synchronous=NORMAL` can lose the last committed transaction on power
+  loss, but never corrupts. The next reconciliation re-captures such a change from the live
+  file.
 
 ## Repairing damaged storage
 
@@ -85,9 +89,10 @@ undo storage verify            # full check; repairs from live files when possib
 undo storage verify --quick    # existence only
 ```
 
-A blob whose object is missing or corrupt can be repaired automatically if a tracked file still
-has exactly that content. Otherwise the affected versions are reported as unrecoverable; restoring
-them fails with a verification error and never writes bad data.
+* A missing or corrupt object is repaired automatically if a tracked file still has exactly that
+  content.
+* Otherwise the affected versions are reported as unrecoverable.
+* Restoring them fails with a verification error and never writes bad data.
 
 ## Ransomware
 

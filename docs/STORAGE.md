@@ -25,13 +25,17 @@ undo-data/
 └── logs/undo.log        JSON-lines log, rotated (10 MiB × 5)
 ```
 
-The data directory is always excluded from monitoring, even if it lies inside a tracked folder.
-Tracking the data directory itself, or a folder inside it, is refused; installed builds also
-refuse Undo's program folder.
+* The data directory is always excluded from monitoring, even inside a tracked folder.
+* Tracking the data directory, or a folder inside it, is refused. Installed builds also refuse
+  Undo's program folder.
 
-Removing history (`undo untrack --purge`, retention) deletes database rows. The space is only
-freed by [garbage collection](#garbage-collection), so *stored* in `undo status` can stay high
-until `undo storage gc` (or the daemon's daily `gc` job) runs.
+* Removing history (`undo untrack --purge`, retention) only deletes database rows.
+* The space is freed by [garbage collection](#garbage-collection), so *stored* in `undo status`
+  can stay high until the daemon's daily `gc` job runs, or until you run:
+
+```sh
+undo storage gc
+```
 
 ## Hashing
 
@@ -99,40 +103,74 @@ The public API is identical for both kinds: callers only see blob hashes.
 | `meta_kv` | last GC / verify / retention times |
 | `schema_migrations` | applied migrations |
 
-Foreign keys are enforced. `versions.blob_hash` and `snapshot_entries.blob_hash/version_id` use
-`ON DELETE RESTRICT`, so the database itself refuses to drop data that is still referenced.
-A partial unique index guarantees one *live* file per path and root.
+* Foreign keys are enforced.
+* `versions.blob_hash` and `snapshot_entries.blob_hash/version_id` use `ON DELETE RESTRICT`, so the
+  database itself refuses to drop data that is still referenced.
+* A partial unique index guarantees one *live* file per path and root.
 
 ## Retention
 
 Configured in `retention.*`; applied by the daemon every `retention.interval_seconds` or with
 `undo storage retention` / `undo storage gc --retention`.
 
-Always kept: the latest version of every file, the latest content of deleted files, every
-version referenced by a snapshot. With `keep_all = true` (default) nothing else is removed unless
-`max_storage_bytes` is exceeded. With `keep_all = false` a version survives if any of
-`keep_last`, `keep_days`, `daily_days`, `weekly_weeks` keeps it. The quota then removes the oldest
-remaining unprotected versions. Removing versions re-links `parent_version_id` to the nearest
-kept ancestor and never deletes data directly.
+**Always kept:**
+
+* the latest version of every file,
+* the latest content of deleted files,
+* every version referenced by a snapshot.
+
+**Everything else:**
+
+* With `keep_all = true` (the default), nothing else is removed unless `max_storage_bytes` is
+  exceeded.
+* With `keep_all = false`, a version survives if any of `keep_last`, `keep_days`, `daily_days`
+  or `weekly_weeks` keeps it.
+* The quota (`max_storage_bytes`) then removes the oldest remaining unprotected versions.
+* Removing a version re-links `parent_version_id` to the nearest kept ancestor. Retention never
+  deletes stored data directly; [garbage collection](#garbage-collection) does.
+
+```sh
+undo storage retention --dry-run     # preview
+undo storage gc --retention          # apply retention, then collect
+```
 
 ## Garbage collection
 
-`undo storage gc [--dry-run]` (and the daemon's `gc` job) deletes blobs and chunks that are not
-referenced by versions, snapshot entries, blob pins (active restores, any process) or in-process
-pins, and that are older than `daemon.gc_grace_seconds` (default 1 h). Inside one
-`BEGIN IMMEDIATE` transaction it re-computes the unreferenced set, deletes the rows (foreign keys
-refuse anything still referenced) and moves the object files into `trash/`; after the commit the
-trash is emptied, and on rollback the files are moved back. Because captures check the presence of
-their object inside their own write transaction, GC and capture can never interleave into a
-dangling reference. Orphan files (objects with no row, for example after a crash) and stale
-staging files are removed under the same rules. Dry run reports exactly what would be reclaimed.
+```sh
+undo storage gc --dry-run            # exactly what would be reclaimed
+undo storage gc
+```
+
+**What it deletes:** blobs and chunks that are
+
+* not referenced by any version or snapshot entry,
+* not pinned (by an active restore in any process, or in-process),
+* older than `daemon.gc_grace_seconds` (default 1 h).
+
+**How it stays safe:**
+
+* Inside one `BEGIN IMMEDIATE` transaction it re-computes the unreferenced set, deletes the rows
+  (foreign keys refuse anything still referenced) and moves the object files into `trash/`.
+* After the commit the trash is emptied; on rollback the files are moved back.
+* Captures check that their object exists inside their own write transaction, so GC and capture
+  can never interleave into a dangling reference.
+* Orphan files (objects with no row, for example after a crash) and stale staging files are
+  removed under the same rules.
 
 ## Verification
 
-`undo storage verify` decompresses and re-hashes every blob and chunk (`--quick` only checks
-existence), marks missing or corrupt objects in the database, runs `PRAGMA quick_check` and
-`foreign_key_check`, lists orphan files and repairs damaged blobs from live files whose current
-content still has the same hash.
+```sh
+undo storage verify                  # full: decompress and re-hash everything
+undo storage verify --quick          # existence only
+```
+
+It:
+
+* decompresses and re-hashes every blob and chunk (`--quick` only checks that they exist),
+* marks missing or corrupt objects in the database,
+* runs `PRAGMA quick_check` and `foreign_key_check`,
+* lists orphan files,
+* repairs damaged blobs from live files whose current content still has the same hash.
 
 ---
 

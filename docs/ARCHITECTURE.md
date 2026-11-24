@@ -5,9 +5,11 @@
 How Undo is put together: the components, how the clients talk to the daemon, and the rules
 that keep data safe under concurrency.
 
-Undo is a monorepo with one source of truth, the **Python backend** (`backend/src/undo_core`),
-and three clients that contain no business logic: the **CLI** (`cli/undo_cli`), the **Textual
-TUI** (`cli/undo_cli/tui`) and the **Flutter desktop app** (`gui/undo_desktop`).
+* **One source of truth:** the Python backend (`backend/src/undo_core`).
+* **Three clients with no business logic:**
+  * the CLI (`cli/undo_cli`),
+  * the Textual TUI (`cli/undo_cli/tui`),
+  * the Flutter desktop app (`gui/undo_desktop`).
 
 ```
                  ┌───────────────────────────── undo daemon (one per data directory) ─────────────────────────────┐
@@ -91,12 +93,22 @@ TUI** (`cli/undo_cli/tui`) and the **Flutter desktop app** (`gui/undo_desktop`).
 
 ## Reconciliation
 
-`Reconciler.reconcile(root, prefix, deep)` scans the tree, compares with the database, detects
-renames (filesystem identity confirmed by name/size, then a unique content-hash match), captures
-new and changed files (size+mtime as cheap detector, full re-hash in `deep` mode) and records
-deletions. It runs at daemon start (`monitor.initial_scan`), every
-`monitor.reconcile_interval_seconds`, after queue overflows and for new directories. A missing root
-(for example an unmounted drive) aborts the scan instead of recording mass deletions.
+`Reconciler.reconcile(root, prefix, deep)` brings the database in line with the folder:
+
+* **Scans** the tree and compares it with the database.
+* **Detects renames:** filesystem identity confirmed by name and size, then a unique content-hash
+  match.
+* **Captures** new and changed files. Size + mtime is the cheap change detector; `deep` mode
+  re-hashes everything.
+* **Records deletions.** If the root itself is missing (for example an unmounted drive), the scan
+  aborts instead of recording mass deletions.
+
+It runs:
+
+* at daemon start (`monitor.initial_scan`),
+* every `monitor.reconcile_interval_seconds`,
+* after an event-queue overflow,
+* for new or moved-in directories.
 
 ## Scheduled jobs (daemon)
 

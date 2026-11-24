@@ -1,8 +1,12 @@
 # Undo desktop app
 
-The desktop app for [Undo](../../README.md): browse the version history of your tracked folders,
-compare and restore earlier versions, recover deleted files, and manage snapshots, storage and
-settings. Built with Flutter (Material 3), Riverpod, GoRouter and Dio. Runs on Windows and Linux.
+The desktop app for [Undo](../../README.md):
+
+* browse the version history of your tracked folders,
+* compare and restore earlier versions, and recover deleted files,
+* manage snapshots, storage and settings.
+
+Built with Flutter (Material 3), Riverpod, GoRouter and Dio. Runs on Windows and Linux.
 
 The app is a window onto the Undo daemon. It never reads Undo's database or stored file
 contents itself; every action goes through the daemon's local API (`127.0.0.1`, bearer token).
@@ -32,9 +36,13 @@ and the current content is saved as a version before it is replaced.
 
 ## Run and build
 
-From the repository root, `make gui` or `./make.sh gui` runs it in development
-(`flutter run -d windows` or `-d linux`). The daemon comes from the `undo` command, so run
-`make init` first.
+Run it in development from the repository root. The daemon comes from the `undo` command, so
+initialise first:
+
+```sh
+make init
+make gui            # or: ./make.sh gui   (flutter run -d windows / -d linux)
+```
 
 ```sh
 flutter pub get
@@ -71,4 +79,4 @@ It bundles this app with the backend (`undo.exe`, `undo-daemon.exe`) into one se
 
 ---
 
-More: [Documentation index](../../docs/README.md) · [Installation](../../docs/INSTALLATION.md) · [Development](../../docs/DEVELOPMENT.md) · [Architecture](../../docs/ARCHITECTURE.md) · [Troubleshooting › Desktop app](../../docs/TROUBLESHOOTING.md#desktop-app)
+More: [Documentation index](../../docs/README.md) · [Installation](../../docs/INSTALLATION.md) · [Development](../../docs/DEVELOPMENT.md) · [Architecture](../../docs/ARCHITECTURE.md) · [Troubleshooting › Desktop app](../../docs/TROUBLESHOOTING.md#desktop-app-and-api)

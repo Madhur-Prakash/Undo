@@ -36,19 +36,25 @@ operations: in-process, or through the daemon's API. See [Architecture](ARCHITEC
 
 ## Setup
 
-You need [uv](https://docs.astral.sh/uv/), which installs Python 3.12 from `.python-version`.
-For the app you also need [Flutter](https://flutter.dev), and on Windows Visual Studio 2022 with
-*Desktop development with C++*.
+You need:
+
+* [uv](https://docs.astral.sh/uv/). It installs Python 3.12 from `.python-version`.
+* For the app: [Flutter](https://flutter.dev).
+* On Windows: Visual Studio 2022 with *Desktop development with C++*.
 
 ```sh
 git clone https://github.com/Madhur-Prakash/Undo.git && cd Undo
 make init            # or: ./make.sh init   (Git Bash / no make)   or: python scripts/dev.py init
 ```
 
-`make init` runs `uv sync --all-packages`, which creates `.venv` with the backend, CLI and dev
-tools. It then initialises a **separate development data directory**, `.dev-home/`, and runs
-`flutter pub get`. All `make` targets that run Undo use `UNDO_HOME=.dev-home`, so development
-never touches the history of an Undo you have installed.
+`make init`:
+
+* runs `uv sync --all-packages`, which creates `.venv` with the backend, CLI and dev tools;
+* initialises a **separate development data directory**, `.dev-home/`;
+* runs `flutter pub get`.
+
+All `make` targets that run Undo use `UNDO_HOME=.dev-home`, so development never touches the
+history of an Undo you have installed.
 
 Every target works three ways: `make <target>`, `./make.sh <target>` (Git Bash on Windows) and
 `python scripts/dev.py <target>`.
@@ -115,10 +121,10 @@ need Developer Mode on Windows, and POSIX-permission tests need Linux.
 
 ## Trying your changes on a real install
 
-Tests run against throwaway data directories. To see a change working on a real installation,
-with autostart, the real data directory, the installed app and the server's systemd service, use
-the update scripts. They install **whatever code is checked out**, so they work for a local
-branch as well as after `git pull`.
+* Tests run against throwaway data directories.
+* To see a change working on a **real installation**, use the update scripts. That covers
+  autostart, the real data directory, the installed app, and the server's systemd service.
+* The scripts install **whatever code is checked out**: a local branch as well as `git pull`.
 
 ### On Windows (Git Bash)
 
@@ -149,9 +155,13 @@ bash scripts/update_linux.sh --editable       # editable install (see below)
 bash scripts/update_linux.sh --pull           # git pull first
 ```
 
-It detects how the daemon runs (systemd user service, system service, `undo start`, or not
-running). It stops the daemon, reinstalls, applies migrations and new default settings
-(`undo init`), restarts the daemon, waits until it answers and prints `undo status`.
+The script:
+
+* detects how the daemon runs: systemd user service, system service, `undo start`, or not
+  running;
+* stops it and reinstalls;
+* applies migrations and new default settings (`undo init`);
+* restarts the daemon, waits until it answers, and prints `undo status`.
 
 **`--editable`** installs the checkout itself rather than a copy. After that, Python edits on the
 server only need a daemon restart (`systemctl --user restart undo`), not a reinstall. That is

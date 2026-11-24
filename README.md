@@ -79,9 +79,13 @@ Think of Git, but for ordinary files, running quietly in the background.
 
 ## Screenshots
 
-The desktop app (Flutter, Material 3) has six sections: Overview, Files, History, Snapshots,
-Storage and Settings. Screenshots are not committed to the repository. Run `make gui` (or
-`./make.sh gui`) to see the real application.
+* The desktop app (Flutter, Material 3) has six sections: Overview, Files, History, Snapshots,
+  Storage and Settings.
+* Screenshots are not committed to the repository. To see the real app:
+
+```sh
+make gui            # or: ./make.sh gui
+```
 
 ## Architecture
 
@@ -119,9 +123,11 @@ uv installs for you.
 | **Linux server** | Install with uv, `undo init`, `undo track /path`, then `undo service install` and `sudo loginctl enable-linger $USER`. Use `undo tui` over SSH. |
 | **Linux desktop** | Unpack the release archive from `python scripts/build.py` and run `./installer/install.sh`. It installs the app with a menu entry and the systemd user service. |
 
-Step-by-step instructions for each, including the inotify limit, system services, upgrading,
-uninstalling and building the installer: **[docs/INSTALLATION.md](docs/INSTALLATION.md)**.
-The Linux steps have not been run on a Linux machine yet.
+* Step-by-step instructions for each, with checks after every step:
+  **[docs/INSTALLATION.md](docs/INSTALLATION.md)**.
+* That guide also covers the inotify limit, system services, updating, uninstalling and building
+  the installer.
+* Tested on Windows 11 and on an Ubuntu server. The Linux desktop app is not yet tested.
 
 ### From source
 
@@ -183,10 +189,12 @@ Full details: [gui/undo_desktop/README.md](gui/undo_desktop/README.md).
 make gui            # or ./make.sh gui    (flutter run -d windows|linux)
 ```
 
-The app finds the daemon through the data directory (`daemon.json` + `api_token`) and **starts it
-automatically** when it is not running (`daemon.autostart`, on by default): the installed app runs
-its bundled `backend\undo-daemon.exe`; a development build uses the `undo` command (set `UNDO_CLI`
-if `undo` is not on `PATH`). Every button calls the real backend.
+* The app finds the daemon through the data directory (`daemon.json` + `api_token`).
+* It **starts the daemon automatically** when it is not running (`daemon.autostart`, on by
+  default):
+  * the installed app runs its bundled `backend\undo-daemon.exe`;
+  * a development build uses the `undo` command (set `UNDO_CLI` if `undo` is not on `PATH`).
+* Every button calls the real backend.
 
 - **Overview**: daemon status, totals, savings, tracked roots (add, scan, pause, untrack), recent changes and snapshots
 - **Files**: search live and deleted files, open a file's full history, restore or compare any version
@@ -206,18 +214,22 @@ Build > Compile (or `ISCC gui/installer/Undo.iss`). Compiling:
 * builds `Undo.exe` with Flutter,
 * writes `gui/installer/Undo-Setup-<version>.exe`.
 
-The build machine needs uv and Flutter (with Visual Studio's C++ desktop workload). The machine
-you install on needs neither. See
-[docs/INSTALLATION.md](docs/INSTALLATION.md#windows).
+* The build machine needs uv and Flutter (with Visual Studio's C++ desktop workload).
+* The machine you install on needs neither.
+* Details: [docs/INSTALLATION.md](docs/INSTALLATION.md#windows).
 
 ## How storage works
 
-Each distinct file content is stored once, at `blobs/<first two hex chars>/<blake3>.zst`.
-The hash is computed from the **original** content, so identical files (or a file changed back to an
-earlier state) cost nothing extra. Data is compressed with Zstandard (level 3 by default; set 1 for
-speed or up to 22 for archival). Formats that are already compressed (`.jpg`, `.zip`, `.mp4`, ...) and
-data that does not shrink are stored raw. Every object is decompressed and re-hashed before it is
-published, and again on every restore. Details: [docs/STORAGE.md](docs/STORAGE.md).
+* **Stored once:** each distinct file content is stored once, at
+  `blobs/<first two hex chars>/<blake3>.zst`.
+* **Content-addressed:** the hash is of the **original** content, so identical files, or a file
+  changed back to an earlier state, cost nothing extra.
+* **Compressed:** Zstandard, level 3 by default (1 for speed, up to 22 for archival).
+  Already-compressed formats (`.jpg`, `.zip`, `.mp4`, …) and data that does not shrink are
+  stored raw.
+* **Verified:** every object is decompressed and re-hashed before it is published, and again on
+  every restore.
+* Details: [docs/STORAGE.md](docs/STORAGE.md).
 
 ## Recovery examples
 
