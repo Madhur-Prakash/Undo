@@ -117,6 +117,10 @@ Every `undo` command, option and setting. For step-by-step recipes see
 
 ## Settings
 
+Settings are stored in `config.json` in the data directory (`undo config --path` prints it). Every
+setting below can also be changed on the app's **Settings** page; exclusion patterns are on its
+**Exclusions** card.
+
 `undo settings show [SECTION|KEY]` and `undo settings set KEY VALUE`. Sizes accept units
 (`500MB`, `2GiB`), lists accept JSON or comma-separated values, `none` clears optional values.
 
@@ -133,7 +137,11 @@ Every `undo` command, option and setting. For step-by-step recipes see
 | `monitor.force_polling` / `polling_interval_seconds` | false / 10 | polling mode |
 | `monitor.event_queue_size` | 10000 | bounded event queue |
 | `monitor.follow_symlinks` / `exclude_hidden` | false / false | |
-| `retention.*` | keep_all | see STORAGE.md |
+| `retention.keep_all` | true | keep every version (rules below off) |
+| `retention.keep_last` / `keep_days` / `daily_days` / `weekly_weeks` | none | retention rules; a version is kept if any rule keeps it ([details](STORAGE.md#retention)) |
+| `retention.max_storage_bytes` | none | storage quota, e.g. `50GB` |
+| `retention.interval_seconds` | 86400 | how often retention runs (first run 10 min after the daemon starts) |
+| `compression.min_size` / `skip_extensions` | 64 B / archives, images, video … | stored uncompressed |
 | `exclusions.defaults` | VCS dirs, tool caches, temp/swap files; Python wheels, eggs, `site-packages/`, `venv/`, `*.pyc`; Node `node_modules/`, `.npm/`, `.pnpm-store/`, `.yarn/`; Rust `target/`, `.cargo/`, `.rustup/`, `*.crate` | `undo exclude list` shows them all; `undo exclude remove PATTERN` drops one (e.g. `target/` if you keep your own folder named *target*) |
 | `exclusions.defaults_version` | 2 | which release of the default list yours is up to date with; new defaults are added once on upgrade, removed ones never come back |
 | `api.host` / `api.port` | 127.0.0.1 / 47821 | loopback only unless `api.allow_remote` |

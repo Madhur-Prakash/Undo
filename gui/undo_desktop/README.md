@@ -20,7 +20,7 @@ contents itself; every action goes through the daemon's local API (`127.0.0.1`, 
 | History | Recent changes across all tracked folders; version details, content preview, and a side-by-side comparison with the previous version (switchable to inline) |
 | Snapshots | Create, compare, restore and delete named snapshots of a folder |
 | Storage | Usage and deduplication savings, verify stored data, apply retention, garbage collection |
-| Settings | All daemon settings (capture, retention, exclusions, monitoring) |
+| Settings | Every setting the CLI can change: compression, chunk deduplication, retention (rules, quota, how often it runs), monitoring, exclusions, capture and performance, maintenance schedule and log level, local API, appearance. Shows where `config.json` is. |
 
 Restoring always shows what will happen first. A file is never overwritten without confirmation,
 and the current content is saved as a version before it is replaced.
