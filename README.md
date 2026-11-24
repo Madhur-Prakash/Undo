@@ -1,11 +1,50 @@
-# Undo
+<div align="center">
 
-**Undo** is a local-first file version history for Windows and Linux. It watches the folders you
-choose and automatically keeps every version of every file: no commits, no staging. Recover a file
-you overwrote, bring back one you deleted, or put a whole directory back the way it was last Tuesday.
+<img src="gui/assets/undo.png" alt="Undo logo" width="128" height="128">
+
+<h1>Undo</h1>
+
+<p><strong>Local-first file version history for Windows and Linux.</strong><br>
+Every version of every file in the folders you choose, kept automatically.</p>
+
+<p>
+  <a href="CHANGELOG.md"><img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-3D5A80?style=flat-square"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green?style=flat-square"></a>
+  <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white">
+  <img alt="Windows 10/11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?style=flat-square&logo=windows&logoColor=white">
+  <img alt="Linux" src="https://img.shields.io/badge/Linux-systemd-FCC624?style=flat-square&logo=linux&logoColor=black">
+</p>
+
+<p>
+  <img alt="Flutter" src="https://img.shields.io/badge/Flutter-desktop-02569B?style=flat-square&logo=flutter&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-local%20API-009688?style=flat-square&logo=fastapi&logoColor=white">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-WAL-003B57?style=flat-square&logo=sqlite&logoColor=white">
+  <img alt="Textual" src="https://img.shields.io/badge/Textual-TUI-5A4FCF?style=flat-square">
+  <img alt="uv" src="https://img.shields.io/badge/built%20with-uv-DE5FE9?style=flat-square&logo=uv&logoColor=white">
+  <img alt="Code style: ruff" src="https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black">
+  <img alt="Type checked: mypy" src="https://img.shields.io/badge/types-mypy-2A6DB2?style=flat-square">
+</p>
+
+<p>
+  <a href="docs/INSTALLATION.md">Installation</a> &middot;
+  <a href="#quick-start">Quick start</a> &middot;
+  <a href="docs/CLI.md">CLI reference</a> &middot;
+  <a href="gui/undo_desktop/README.md">Desktop app</a> &middot;
+  <a href="#documentation">Documentation</a> &middot;
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
+
+</div>
+
+---
+
+**Undo** watches the folders you choose and automatically keeps every version of every file: no
+commits, no staging. Recover a file you overwrote, bring back one you deleted, or put a whole
+directory back the way it was last Tuesday.
 
 Think of Git, but for ordinary files, running quietly in the background.
 
+> [!WARNING]
 > **Undo is not a backup.** It keeps history on the *same machine*. Disk failure, theft or
 > ransomware that reaches the Undo data directory destroys the history too. Keep an independent
 > backup as well. See [Limitations](#limitations).
@@ -135,6 +174,8 @@ Every command and option: [docs/CLI.md](docs/CLI.md).
 
 ## GUI
 
+Full details: [gui/undo_desktop/README.md](gui/undo_desktop/README.md).
+
 ```sh
 make gui            # or ./make.sh gui    (flutter run -d windows|linux)
 ```
@@ -213,6 +254,22 @@ Guarantees and failure handling: [docs/RECOVERY.md](docs/RECOVERY.md).
 - The Windows USN journal is only probed (it needs administrator rights). Reconciliation uses
   directory scanning, which works everywhere.
 
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [docs/INSTALLATION.md](docs/INSTALLATION.md) | Windows installer, Linux server, Linux desktop, from source; services, upgrading, uninstalling, building the installer |
+| [docs/CLI.md](docs/CLI.md) | Every `undo` command and option, settings reference |
+| [docs/RECOVERY.md](docs/RECOVERY.md) | Getting files back in common situations, and the limits of what Undo protects |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the daemon, storage, database, API and interfaces fit together |
+| [docs/STORAGE.md](docs/STORAGE.md) | Content-addressed storage, compression, deduplication, integrity and garbage collection |
+| [docs/API.md](docs/API.md) | The local HTTP API ([OpenAPI schema](docs/API_OPENAPI.json)) |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common problems and their fixes |
+| [gui/undo_desktop/README.md](gui/undo_desktop/README.md) | The desktop app: screens, how it finds the daemon, building it, code layout |
+| [gui/installer/Undo.iss](gui/installer/Undo.iss) | The Windows installer script (Inno Setup 7); comments at the top explain the build |
+| [CHANGELOG.md](CHANGELOG.md) | Changes in each version |
+| [LICENSE](LICENSE) | MIT license |
+
 ## Development
 
 ```sh
@@ -222,6 +279,4 @@ make lint typecheck
 make build      # wheels, desktop bundle, portable archive in dist/
 ```
 
-Changes in each version: [CHANGELOG.md](CHANGELOG.md).
-
-License: MIT (see [LICENSE](LICENSE)).
+License: MIT (see [LICENSE](LICENSE)). Changes in each version: [CHANGELOG.md](CHANGELOG.md).
