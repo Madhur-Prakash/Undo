@@ -189,10 +189,11 @@ class OperationChip extends StatelessWidget {
   }
 }
 
-/// A toolbar dropdown styled like the search fields (outlined box, no underline).
+/// A toolbar dropdown in an outlined box, like the search fields.
 ///
-/// Flutter's plain [DropdownButton] keeps keyboard focus after a choice and paints a focus
-/// highlight that stays on; this one has no focus colour and releases focus once you choose.
+/// Built from a plain bordered box, not an InputDecorator: that needs a fixed width and breaks the
+/// layout of a toolbar Row. No focus colour, and focus is released after a choice, so it does not
+/// stay highlighted.
 class AppDropdown<T> extends StatelessWidget {
   const AppDropdown({super.key, required this.value, required this.items, required this.onChanged, this.hint});
   final T value;
@@ -202,17 +203,21 @@ class AppDropdown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InputDecorator(
-      decoration: const InputDecoration(
-        isDense: true,
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 40),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: scheme.outline),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
           value: value,
           hint: hint,
           items: items,
-          isDense: false,
+          isDense: true,
           focusColor: Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           onChanged: (v) {
@@ -246,7 +251,7 @@ class SortOption {
 /// The chosen sort: an option key and a direction.
 typedef SortState = ({String key, bool descending});
 
-/// A "Sort by" dropdown and a button that flips the direction.
+/// A "Sort: ..." button that opens the list of sort options, and an arrow that flips direction.
 class SortControl extends StatelessWidget {
   const SortControl({super.key, required this.options, required this.value, required this.onChanged});
   final List<SortOption> options;
@@ -258,16 +263,20 @@ class SortControl extends StatelessWidget {
     final current = options.firstWhere((o) => o.key == value.key, orElse: () => options.first);
     final hint = value.descending ? current.descendingHint : current.ascendingHint;
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(Icons.sort, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
-      const SizedBox(width: 8),
-      AppDropdown<String>(
-        value: current.key,
-        items: [for (final o in options) DropdownMenuItem(value: o.key, child: Text(o.label))],
-        onChanged: (k) {
-          if (k == null) return;
-          final o = options.firstWhere((o) => o.key == k);
-          onChanged((key: k, descending: o.descendingFirst));
-        },
+      MenuAnchor(
+        menuChildren: [
+          for (final o in options)
+            MenuItemButton(
+              leadingIcon: SizedBox(width: 18, child: o.key == current.key ? const Icon(Icons.check, size: 18) : null),
+              onPressed: () => onChanged((key: o.key, descending: o.descendingFirst)),
+              child: Text(o.label),
+            ),
+        ],
+        builder: (context, controller, _) => OutlinedButton.icon(
+          onPressed: () => controller.isOpen ? controller.close() : controller.open(),
+          icon: const Icon(Icons.sort, size: 18),
+          label: Text('Sort: ${current.label}'),
+        ),
       ),
       const SizedBox(width: 4),
       IconButton(
@@ -276,6 +285,55 @@ class SortControl extends StatelessWidget {
         onPressed: () => onChanged((key: value.key, descending: !value.descending)),
       ),
     ]);
+  }
+}
+
+/// A table column header that sorts by [sortKey] when clicked, with an arrow when active.
+/// Clicking the active column again reverses the direction.
+class SortableHeader extends StatelessWidget {
+  const SortableHeader({
+    super.key,
+    required this.label,
+    required this.sortKey,
+    required this.options,
+    required this.value,
+    required this.onChanged,
+    this.alignRight = false,
+  });
+  final String label;
+  final String sortKey;
+  final List<SortOption> options;
+  final SortState value;
+  final ValueChanged<SortState> onChanged;
+  final bool alignRight;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = value.key == sortKey;
+    final option = options.firstWhere((o) => o.key == sortKey);
+    return InkWell(
+      borderRadius: BorderRadius.circular(4),
+      onTap: () => onChanged((key: sortKey, descending: active ? !value.descending : option.descendingFirst)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        child: Row(
+          mainAxisAlignment: alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: active ? const TextStyle(fontWeight: FontWeight.w700) : null,
+              ),
+            ),
+            if (active) ...[
+              const SizedBox(width: 4),
+              Icon(value.descending ? Icons.arrow_downward : Icons.arrow_upward, size: 14),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 

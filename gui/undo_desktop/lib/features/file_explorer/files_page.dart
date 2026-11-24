@@ -105,13 +105,25 @@ class _FilesPageState extends ConsumerState<FilesPage> {
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 6),
         child: DefaultTextStyle(
           style: theme.textTheme.labelMedium!.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          child: const Row(children: [
-            Expanded(flex: 5, child: Text('Name / path')),
-            Expanded(flex: 1, child: Text('Size', textAlign: TextAlign.right)),
-            Expanded(flex: 2, child: Text('Last modified', textAlign: TextAlign.right)),
-            Expanded(flex: 2, child: Text('Latest version', textAlign: TextAlign.right)),
-            Expanded(flex: 1, child: Text('History', textAlign: TextAlign.right)),
-          ]),
+          child: Builder(builder: (context) {
+            final sort = (key: query.sort, descending: query.descending);
+            void setSort(SortState s) => _setQuery(query.copyWith(sort: s.key, descending: s.descending));
+            Widget header(String label, String key, {bool right = true}) => SortableHeader(
+                  label: label,
+                  sortKey: key,
+                  options: fileSortOptions,
+                  value: sort,
+                  onChanged: setSort,
+                  alignRight: right,
+                );
+            return Row(children: [
+              Expanded(flex: 5, child: header('Name / path', 'path', right: false)),
+              Expanded(flex: 1, child: header('Size', 'size')),
+              Expanded(flex: 2, child: header('Last modified', 'modified')),
+              Expanded(flex: 2, child: header('Latest version', 'version')),
+              Expanded(flex: 1, child: header('History', 'versions')),
+            ]);
+          }),
         ),
       ),
       const Divider(),
