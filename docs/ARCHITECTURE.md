@@ -34,7 +34,7 @@ TUI** (`cli/undo_cli/tui`) and the **Flutter desktop app** (`gui/undo_desktop`).
 | `recovery/` | Restore safety primitives, file/tree restore engine, point-in-time and snapshot entry resolution, deleted-file listing |
 | `daemon/` | Process lock, health counters, scheduler, startup recovery and discovery (`lifecycle.py`), `DaemonManager` |
 | `api/` | FastAPI app factory, auth dependency, request schemas, routes |
-| `platform/` | Paths and the data-directory layout, permissions, autostart integration (systemd / scheduled task) |
+| `platform/` | Paths and the data-directory layout, permissions, autostart integration (systemd units; the per-user Run key on Windows) |
 | `service.py` | `UndoService`: the only API the outside world uses; returns models from `domain.py` |
 | `context.py` | Composition root wiring one data directory's components |
 

@@ -16,6 +16,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - `exclusions.defaults_version`: existing installs receive defaults added by newer versions once,
   on upgrade. A default you removed is never added back.
 
+### Fixed
+
+- Windows: `undo service install` failed with "schtasks failed: ERROR: Access is denied" for
+  users without administrator rights, because Windows only lets administrators create a
+  scheduled task that starts at sign-in. The installer ran the same command hidden, so its
+  *Start the Undo daemon when I sign in* option silently did nothing. Autostart now uses the
+  per-user Run key (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `Undo`), which needs no
+  elevation and appears under *Settings > Apps > Startup*. The command also starts the daemon
+  right away, and removes the old *Undo Daemon* task if an earlier build created one.
+  `undo service status` shows the registered command.
+
 ## [1.0.0] - 2026-11-24
 
 First release.
@@ -73,7 +84,8 @@ First release.
   directory. It is used by the CLI, the TUI and the desktop app.
 - Health reporting: watcher state, queue depth, pending captures, recovery results (`undo status`,
   `undo doctor`, `undo logs`).
-- Autostart: a logon task on Windows, or a systemd user or system unit on Linux
+- Autostart: at sign-in on Windows (per-user Run key, no admin needed), or a systemd user or
+  system unit on Linux
   (`undo service install`).
 
 #### Command line and TUI
@@ -126,7 +138,7 @@ First release.
 - Tested on Windows 11. The Linux code paths (inotify, systemd, the Linux app build and install
   scripts) have not yet been run on Linux.
 - The machine-wide Windows service (pywin32) has not been tested. The tested way to start at
-  sign-in is the logon task.
+  sign-in is `undo service install`.
 - The Windows USN journal is only detected, not used, because it needs administrator rights.
   Missed changes are found by rescanning folders instead.
 - Empty folders and symlinks themselves are not versioned, and symlinks are not followed by

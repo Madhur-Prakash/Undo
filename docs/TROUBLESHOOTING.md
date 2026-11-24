@@ -17,6 +17,7 @@ Start with `undo doctor` and `undo status`, then `undo logs -n 200`.
 | `undo storage verify` exits 8 | Damaged/missing objects remain (listed). Restore from your independent backup if needed. |
 | GUI shows "Not connected" | Click *Start daemon*. If `undo` is not on `PATH`, set `UNDO_CLI` to the full path of `undo` (`undo.exe`). Check that the GUI and CLI use the same `UNDO_HOME`. |
 | `flutter build windows` fails about symlinks | Only happens if a Flutter plugin is added (the app uses none): enable Developer Mode (`start ms-settings:developers`). |
+| `undo service install` says "schtasks failed: Access is denied" | Fixed: builds before this change used a scheduled task, which Windows only lets administrators create. Update Undo; autostart now uses the per-user Run key and needs no admin. |
 | Installer compile fails | Read the log it names in `gui/installer/build` (`uv.log`, `pyinstaller.log`, `flutter.log`). |
 | API port 47821 busy | The daemon picks a random free port automatically and publishes it in `daemon.json`; set `api.port` to choose another fixed one. |
 | High CPU during initial scan | Expected once: every file is hashed and compressed. Lower `capture.max_concurrent` to 1 and `compression.level` to 1 on small machines. Later scans only hash changed files. |

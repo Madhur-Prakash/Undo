@@ -164,12 +164,16 @@ Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Registry]
+; The autostart value `undo service install` writes: removed on uninstall even if the
+; daemon's own `service uninstall` could not run.
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "Undo"; Flags: uninsdeletevalue dontcreatekey
 Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\backend"; Check: NeedsAddPath(ExpandConstant('{app}\backend')); Tasks: addtopath
 
 [Run]
 ; Creates %LOCALAPPDATA%\Undo (settings, database, API token) if this is the first install.
 Filename: "{app}\backend\{#CliExe}"; Parameters: "init"; StatusMsg: "Preparing Undo's data folder..."; Flags: runhidden waituntilterminated
-; A logon task running undo-daemon.exe (the same as `undo service install`).
+; Starts undo-daemon.exe at every sign-in through the per-user Run key (value "Undo"; no
+; administrator rights needed), and starts it now. The same as `undo service install`.
 Filename: "{app}\backend\{#CliExe}"; Parameters: "service install"; StatusMsg: "Registering the Undo daemon to start at sign-in..."; Flags: runhidden waituntilterminated; Tasks: startup
 Filename: "{app}\{#AppExe}"; Description: "Start Undo now"; Flags: nowait postinstall skipifsilent
 

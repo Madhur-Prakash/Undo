@@ -33,7 +33,7 @@ into `%LOCALAPPDATA%\Programs\Undo`. Setup offers three options:
 
 | Option | Default | What it does |
 |---|---|---|
-| Start the Undo daemon when I sign in | on | Registers the logon task *Undo Daemon* (the same as `undo service install`), so changes are recorded even when the app is closed |
+| Start the Undo daemon when I sign in | on | Runs `undo service install`: adds the value `Undo` to your Run key, so the daemon starts at every sign-in and records changes even when the app is closed. It is listed (and can be switched off) under *Settings > Apps > Startup* |
 | Add the undo command to PATH | on | Adds `…\Undo\backend` to your user `PATH`, so `undo` and `undo tui` work in any new terminal |
 | Create a desktop shortcut | off | A desktop icon for the app |
 
@@ -64,6 +64,23 @@ opens `undo tui`.
 * **Uninstall:** use *Settings > Apps > Undo > Uninstall*. It stops the daemon, removes the logon
   task and the `PATH` entry, then asks whether to delete your version history. The default is
   **No**: if you keep it, reinstalling picks it up again.
+
+### Starting at sign-in
+
+The daemon starts when you sign in through the per-user Run key: the value `Undo` in
+`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, which runs
+`"…\Undo\backend\undo-daemon.exe" --data-dir "…\Undo"`. This needs no administrator rights.
+
+```powershell
+undo service status       # autostart at sign-in: installed, and the registered command
+undo service install      # add it (and start the daemon now)
+undo service uninstall    # remove it
+```
+
+You can also switch it on or off under *Settings > Apps > Startup* (entry *Undo*). It starts at
+**sign-in**, not at boot. Changes made before you sign in, for example by another account or
+another OS, are found by the rescan the daemon runs when it starts. To record changes when
+nobody is signed in, use the [machine-wide service](#machine-wide-windows-service-optional-advanced).
 
 ### Building the installer
 
@@ -101,7 +118,7 @@ it together with the Python packages. The icon is `gui/assets/undo.ico`, drawn b
 
 ### Machine-wide Windows service (optional, advanced)
 
-The installer's logon task runs the daemon while you are signed in, which suits a personal PC.
+The installer's autostart runs the daemon while you are signed in, which suits a personal PC.
 To record changes for an account that is not signed in, run the daemon as a Windows service
 instead. This needs administrator rights and a Python install with pywin32
 (`pip install "undo-core[windows-service]"`):
@@ -281,8 +298,8 @@ uv tool install --editable ./cli --with-editable ./backend    # = make install /
 Without uv: `python3.12 -m pip install --user ./backend ./cli`.
 
 Then `undo track PATH`, `undo start`, and `make gui` (or `./make.sh gui`) to run the app with
-Flutter. On Windows, `undo service install` registers the logon task with `pythonw`, so no
-console window opens. On Linux it installs the systemd user unit.
+Flutter. On Windows, `undo service install` registers `pythonw -m undo_core.daemon` in the
+per-user Run key, so no console window opens (the installed build registers `undo-daemon.exe`). On Linux it installs the systemd user unit.
 
 The app uses no Flutter plugins. Its folder picker is native code in
 `gui/undo_desktop/windows/runner/flutter_window.cpp`, so Windows Developer Mode is not needed.

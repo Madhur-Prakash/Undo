@@ -51,7 +51,9 @@
 | `undo restart` | Stop and start. |
 | `undo status [--json]` | Daemon state, queue, watchers, recent errors, totals. Works without a daemon. |
 | `undo logs [-n N] [-f] [--raw]` | Show / follow the JSON log, pretty-printed. |
-| `undo service install [--system]` | Autostart: systemd user unit (Linux, `--system` as root) or logon task (Windows). |
+| `undo service install [--system]` | Autostart. Linux: systemd user unit (`--system` as root for a system unit). Windows: starts the daemon at sign-in through the per-user Run key (value `Undo`; no admin needed), and starts it now. |
+| `undo service status` | Whether autostart is installed. Windows: the registered command. Linux: `systemctl --user is-enabled undo`. |
+| `undo service uninstall [--system]` | Removes autostart. A running daemon keeps running until `undo stop`. |
 | `undo service uninstall [--system]` / `undo service status` | Remove / inspect autostart. |
 
 ## History

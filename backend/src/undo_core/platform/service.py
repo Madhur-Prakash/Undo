@@ -2,9 +2,10 @@
 
 Linux:   systemd unit (``--user`` by default, no root needed; ``system`` scope
          installs ``undo@.service`` running as a named user).
-Windows: a per-user Scheduled Task that starts the daemon at logon (no admin
-         needed), or a real Windows service via pywin32 (``services/windows``),
-         which requires administrator rights.
+Windows: a value named "Undo" in the per-user Run key (``RUN_KEY`` under HKEY_CURRENT_USER) that starts the
+         windowless daemon at sign-in. No administrator rights are needed (a scheduled
+         task with a logon trigger would need them). A real Windows service via pywin32
+         (``services/windows``) is the machine-wide alternative and needs administrator rights.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ from pathlib import Path
 from undo_core.platform.paths import IS_LINUX, IS_WINDOWS, UndoPaths
 from undo_core.utils.errors import UndoError
 
-TASK_NAME = "Undo Daemon"
+TASK_NAME = "Undo Daemon"  # logon task of earlier builds; removed when found
 UNIT_NAME = "undo.service"
 
 
@@ -135,41 +136,82 @@ def _uninstall_systemd(system: bool) -> ServiceResult:
 
 
 # --------------------------------------------------------------------------- Windows
-def _install_task(paths: UndoPaths) -> ServiceResult:
-    cmd = daemon_command(paths)
-    tr = " ".join(f'"{c}"' for c in cmd)
-    result = _run(
-        [
-            "schtasks",
-            "/Create",
-            "/F",
-            "/SC",
-            "ONLOGON",
-            "/RL",
-            "LIMITED",
-            "/TN",
-            TASK_NAME,
-            "/TR",
-            tr,
-        ]
-    )
-    if result.returncode != 0:
-        return ServiceResult(
-            False, f"schtasks failed: {result.stderr.strip() or result.stdout.strip()}"
-        )
-    _run(["schtasks", "/Run", "/TN", TASK_NAME])
+# Autostart at sign-in through the per-user Run key. Unlike a scheduled task with a logon
+# trigger (which Windows only lets administrators create), this needs no elevation, and it
+# is what the Windows "Startup apps" settings page lists and can switch off.
+RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+RUN_VALUE = "Undo"
+
+
+def _run_key_get() -> str | None:
+    if sys.platform != "win32":
+        return None
+    import winreg
+
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as key:
+            value, _kind = winreg.QueryValueEx(key, RUN_VALUE)
+    except OSError:
+        return None
+    return str(value)
+
+
+def _run_key_set(command: str) -> None:
+    if sys.platform != "win32":
+        raise UndoError("The Run key exists only on Windows")
+    import winreg
+
+    with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
+        winreg.SetValueEx(key, RUN_VALUE, 0, winreg.REG_SZ, command)
+
+
+def _run_key_delete() -> bool:
+    if sys.platform != "win32":
+        return False
+    import winreg
+
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
+            winreg.DeleteValue(key, RUN_VALUE)
+    except FileNotFoundError:
+        return False
+    return True
+
+
+def _remove_legacy_task() -> None:
+    """Remove the logon task earlier builds tried to create (needs no rights if it exists)."""
+    if _run(["schtasks", "/Query", "/TN", TASK_NAME]).returncode == 0:
+        _run(["schtasks", "/Delete", "/F", "/TN", TASK_NAME])
+
+
+def _install_task(paths: UndoPaths, *, start_now: bool = True) -> ServiceResult:
+    command = subprocess.list2cmdline(daemon_command(paths))
+    try:
+        _run_key_set(command)
+    except OSError as exc:
+        return ServiceResult(False, f"Could not write the Run key: {exc}")
+    _remove_legacy_task()
+    started = ""
+    if start_now:
+        from undo_core.daemon.lifecycle import start_background  # avoid an import cycle
+
+        try:
+            info = start_background(paths)
+            started = f"; daemon running (pid {info.pid})"
+        except UndoError as exc:
+            started = f"; could not start it now: {exc.message}"
     return ServiceResult(
-        True, f"Scheduled task '{TASK_NAME}' created (starts at logon) and started"
+        True,
+        f"The daemon starts when you sign in (HKCU\\{RUN_KEY}\\{RUN_VALUE}){started}",
     )
 
 
 def _uninstall_task() -> ServiceResult:
-    result = _run(["schtasks", "/Delete", "/F", "/TN", TASK_NAME])
-    if result.returncode != 0:
-        return ServiceResult(
-            False, f"schtasks failed: {result.stderr.strip() or result.stdout.strip()}"
-        )
-    return ServiceResult(True, f"Scheduled task '{TASK_NAME}' removed")
+    removed = _run_key_delete()
+    _remove_legacy_task()
+    if not removed:
+        return ServiceResult(True, "Autostart was not installed")
+    return ServiceResult(True, "Autostart removed (the running daemon keeps running until stopped)")
 
 
 def install_autostart(paths: UndoPaths, *, system: bool = False) -> ServiceResult:
@@ -198,6 +240,8 @@ def autostart_status() -> str:
         r = _run(["systemctl", "--user", "is-enabled", UNIT_NAME])
         return f"systemd --user: {r.stdout.strip() or r.stderr.strip()}"
     if IS_WINDOWS:
-        r = _run(["schtasks", "/Query", "/TN", TASK_NAME])
-        return "scheduled task: installed" if r.returncode == 0 else "scheduled task: not installed"
+        command = _run_key_get()
+        if command:
+            return f"autostart at sign-in: installed\n  {command}"
+        return "autostart at sign-in: not installed (run `undo service install`)"
     return "unsupported platform"

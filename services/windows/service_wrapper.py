@@ -5,7 +5,7 @@ process. The data directory is read from the service's registry parameters
 (``HKLM\\SYSTEM\\CurrentControlSet\\Services\\UndoDaemon\\Parameters\\DataDir``),
 written by ``install_service.py``. Note: a service running as LocalSystem
 can only read files that LocalSystem can access; for per-user folders prefer
-``undo service install`` (logon task) or configure the service to run as
+``undo service install`` (starts at sign-in, no admin needed) or configure the service to run as
 that user (``install_service.py --user``).
 """
 

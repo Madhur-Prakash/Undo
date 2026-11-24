@@ -104,7 +104,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/STORAGE.md](docs/STOR
 
 | Platform | Monitoring | Autostart | GUI |
 |---|---|---|---|
-| Windows 10/11 | ReadDirectoryChangesW (polling fallback) | logon task (`undo service install`) or Windows service (pywin32) | Flutter Windows |
+| Windows 10/11 | ReadDirectoryChangesW (polling fallback) | at sign-in, no admin needed (`undo service install`) or Windows service (pywin32) | Flutter Windows |
 | Ubuntu / mainstream Linux | inotify (polling fallback) | systemd user or system unit | Flutter Linux (GTK) |
 | Headless Linux servers | inotify / polling | systemd | not needed: CLI + TUI |
 

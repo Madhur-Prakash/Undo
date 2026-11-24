@@ -210,7 +210,7 @@ def register(app: typer.Typer) -> None:
         ctx: typer.Context,
         system: bool = typer.Option(False, "--system", help="System-wide (Linux: needs root)"),
     ) -> None:
-        """Start the daemon automatically (systemd user unit / Windows logon task)."""
+        """Start the daemon automatically (Linux: systemd unit; Windows: at sign-in, no admin needed)."""
         with handle_errors():
             result = install_autostart(state(ctx).paths, system=system)
         (render.success if result.ok else render.error)(
