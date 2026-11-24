@@ -20,9 +20,12 @@ def register(app: typer.Typer) -> None:
         json_out: bool = typer.Option(False, "--json"),
     ) -> None:
         """Start tracking a directory (captures its current state)."""
+        # Resolve here: the daemon has its own working directory, so "." or a relative path
+        # sent as typed would name a different folder there.
+        target = path.expanduser().resolve()
         with session(ctx) as b:
-            with render.console.status(f"Tracking {path} ..."):
-                result = b.call("add_root", path=str(path), scan=not no_scan)
+            with render.console.status(f"Tracking {target} ..."):
+                result = b.call("add_root", path=str(target), scan=not no_scan)
             mode = b.mode
         if json_out:
             render.print_json(result)

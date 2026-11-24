@@ -30,6 +30,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   (shown on the Overview page). It ran inside the write transaction SQLAlchemy opens, where
   SQLite refuses checkpoints. It now runs outside a transaction and trims the WAL file. No data
   was affected: SQLite's own automatic checkpoints kept running.
+- `undo track .` (or any relative path) tracked the daemon's working directory instead of the
+  folder you were in when the daemon was running; under systemd that is your home directory.
+  The CLI now resolves the path before sending it.
 - Installed builds refuse to track Undo's own program folder (`%LOCALAPPDATA%\Programs\Undo`),
   as they already refused its data folder.
 
