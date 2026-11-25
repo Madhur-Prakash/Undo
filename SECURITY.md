@@ -11,8 +11,8 @@ matter. Thank you for reporting them responsibly.
 
 | Version | Security fixes |
 |---|---|
-| 1.1.x (latest) | Yes |
-| 1.0.x and older | No: update to the [latest release](https://github.com/Madhur-Prakash/Undo/releases/latest) |
+| 1.2.x (latest) | Yes |
+| 1.1.x and older | No: update to the [latest release](https://github.com/Madhur-Prakash/Undo/releases/latest) |
 
 ## Reporting a vulnerability
 

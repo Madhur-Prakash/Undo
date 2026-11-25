@@ -930,7 +930,7 @@ wheels = [
 
 [[package]]
 name = "undo-cli"
-version = "1.1.1"
+version = "1.2.0"
 source = { editable = "cli" }
 dependencies = [
     { name = "httpx" },
@@ -951,7 +951,7 @@ requires-dist = [
 
 [[package]]
 name = "undo-core"
-version = "1.1.1"
+version = "1.2.0"
 source = { editable = "backend" }
 dependencies = [
     { name = "blake3" },
@@ -985,7 +985,7 @@ provides-extras = ["windows-service"]
 
 [[package]]
 name = "undo-workspace"
-version = "1.1.1"
+version = "1.2.0"
 source = { virtual = "." }
 dependencies = [
     { name = "undo-cli" },
