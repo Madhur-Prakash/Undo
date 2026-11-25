@@ -85,6 +85,38 @@ undo service install
 undo service status
 ```
 
+### The daemon does not start at sign-in (Windows), but `undo service status` says *installed*
+
+* **Cause:** *Undo* is disabled in Task Manager's startup list, or the registered command points
+  at an old data directory or program folder.
+* **Check:**
+
+```powershell
+undo service status
+reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v Undo
+```
+
+* **Fix:**
+  * Task Manager > **Startup apps** > *Undo* > **Enable**.
+  * Re-register it with the current folders:
+
+```sh
+undo service install
+```
+
+### Undo uses the old data directory after moving it
+
+* **Cause:** `UNDO_HOME` is not visible yet (old terminal or app session), or autostart still
+  has the old path.
+* **Fix:** open a new terminal, re-run autostart, and check the path:
+
+```sh
+undo service install
+undo config --path
+```
+
+* Full steps: [Storage › Moving the data directory](STORAGE.md#moving-the-data-directory).
+
 ### Linux service stops when you log out, or does not start at boot
 
 * **Cause:** linger is off, so systemd only runs user services while you are logged in.

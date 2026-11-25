@@ -17,8 +17,11 @@ Undo keeps its version history, settings and API token in one **data directory**
 | Windows | `%LOCALAPPDATA%\Undo` |
 | Linux | `$XDG_DATA_HOME/undo`, or `~/.local/share/undo` |
 
-Set `UNDO_HOME` (or pass `--data-dir`) to use another directory. The desktop app honours
-`UNDO_HOME` too. Uninstalling never deletes this directory unless you ask it to.
+* Set `UNDO_HOME` (or pass `--data-dir`) to use another directory. The desktop app honours
+  `UNDO_HOME` too.
+* Moving an existing one, step by step: [Storage › Moving the data
+  directory](STORAGE.md#moving-the-data-directory).
+* Uninstalling never deletes this directory unless you ask it to.
 
 **Tested so far:**
 
@@ -164,6 +167,19 @@ undo service status       # installed or not, and the registered command
 undo service install      # add it, and start the daemon now
 undo service uninstall    # remove it
 ```
+
+**Is autostart enabled?**
+
+```powershell
+undo service status       # "installed" and the registered command
+reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v Undo
+```
+
+* The registered command must point at your data directory (`--data-dir "…"`). If it shows an
+  old folder, run `undo service install` again.
+* Also check **Task Manager > Startup apps**: *Undo* must be **Enabled**. Disabling it there
+  stops it from starting even though `undo service status` still says *installed*.
+* After signing in, `undo status` should show the daemon running.
 
 * It starts at **sign-in**, not at boot.
 * Changes made while you are signed out are found by the rescan the daemon runs when it starts.
@@ -370,9 +386,14 @@ last SSH session closes. Check both:
 
 ```sh
 undo service status                         # systemd --user: enabled
-loginctl show-user "$USER" -p Linger        # Linger=yes
+systemctl --user is-enabled undo            # enabled  (starts automatically)
+loginctl show-user "$USER" -p Linger        # Linger=yes  (starts at boot, not only at login)
 systemctl --user status undo                # active (running)
 ```
+
+* Autostart works only if **both** `is-enabled` says `enabled` and linger is `yes`.
+* `systemctl --user cat undo` shows the unit, including the data directory it uses
+  (`--data-dir`, `UNDO_HOME`).
 
 **Option B: system service** (starts at boot and runs as the account you name):
 

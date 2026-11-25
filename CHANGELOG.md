@@ -18,6 +18,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   folders, snapshots, skipped files, saved merges); they wrap instead.
 - The TUI's restore preview shows the selected item's full path and detail below the table.
 
+### Documentation
+
+- [Storage › Moving the data directory](docs/STORAGE.md#moving-the-data-directory): setting
+  `UNDO_HOME` on Windows and Linux, step by step.
+- How to check that autostart is enabled: `undo service status`, the Run key, Task Manager's
+  *Startup apps* (Windows); `systemctl --user is-enabled undo` and linger (Linux).
+
 ## [1.2.0] - 2026-11-26
 
 Resolving a conflict no longer writes the file straight away. Resolve several files, then

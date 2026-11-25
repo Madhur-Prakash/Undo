@@ -20,6 +20,8 @@
 | Resolve a conflict | [Comparing and resolving](RECOVERY.md#comparing-and-resolving-conflicts) |
 | Look up a command or setting | [CLI reference](CLI.md) |
 | Fix a problem | [Troubleshooting](TROUBLESHOOTING.md) |
+| Check that Undo starts automatically | [Windows](INSTALLATION.md#starting-at-sign-in), [Linux](INSTALLATION.md#5-start-the-daemon-and-keep-it-running) |
+| Move the data directory | [Storage › Moving](STORAGE.md#moving-the-data-directory) |
 | Update Windows | [Windows › Updating](INSTALLATION.md#updating) |
 | Update a Linux server | [Linux › Updating](INSTALLATION.md#updating-1) |
 | Work on the code | [Development](DEVELOPMENT.md) |

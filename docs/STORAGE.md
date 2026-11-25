@@ -37,6 +37,88 @@ undo-data/
 undo storage gc
 ```
 
+## Moving the data directory
+
+Undo finds its data directory through the `UNDO_HOME` environment variable (or `--data-dir`).
+To keep it somewhere else, for example on a bigger drive:
+
+* Move it only while the daemon is stopped: the database is open while it runs.
+* Pick a folder that is **not** inside a tracked folder.
+* Re-run `undo service install` afterwards: autostart stores the folder path when it is
+  installed, so it would keep starting the daemon with the old one.
+
+### Windows
+
+1. Close the app, then stop the daemon:
+
+   ```sh
+   undo stop
+   ```
+
+2. Move the folder:
+
+   ```powershell
+   Move-Item "$env:LOCALAPPDATA\Undo" "D:\UndoData"
+   ```
+
+3. Set `UNDO_HOME` for your user:
+
+   ```powershell
+   [Environment]::SetEnvironmentVariable("UNDO_HOME", "D:\UndoData", "User")
+   ```
+
+   * Or: Start > type *environment variables* > *Edit environment variables for your account*
+     > **New…**. Name `UNDO_HOME`, value `D:\UndoData`.
+
+4. Open a **new** terminal (old ones do not see the variable), then:
+
+   ```sh
+   undo service install      # autostart now uses the new folder
+   undo status
+   ```
+
+5. Reopen the app. If it still shows the old folder, sign out and back in.
+
+### Linux
+
+1. Stop the daemon and move the folder:
+
+   ```sh
+   undo stop
+   mv ~/.local/share/undo /data/undo
+   ```
+
+2. Set `UNDO_HOME` for your user:
+
+   ```sh
+   echo 'export UNDO_HOME=/data/undo' >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+3. Rewrite the systemd unit with the new path, and restart:
+
+   ```sh
+   undo service install
+   systemctl --user restart undo
+   undo status
+   ```
+
+   * System service instead:
+     `sudo ~/undo/services/linux/install_service.sh --system --user "$USER" --data-dir /data/undo`
+
+### Check it worked
+
+```sh
+undo config --path        # a path inside the new folder
+```
+
+* The app's **Settings** page shows the new folder.
+* To use another folder for a single command, without moving anything:
+
+```sh
+undo --data-dir D:\UndoData status
+```
+
 ## Hashing
 
 * Algorithm: **BLAKE3-256**, hex encoded (64 chars).
