@@ -108,6 +108,10 @@ class MergeDraftRequest(BaseModel):
     edited: bool = False
 
 
+class MergeResolutionRequest(MergeDraftRequest):
+    expected_hash: str | None = None
+
+
 class ExclusionRequest(BaseModel):
     pattern: str
     root: str | int | None = None

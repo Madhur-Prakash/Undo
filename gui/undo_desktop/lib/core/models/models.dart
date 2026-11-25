@@ -360,13 +360,17 @@ class RestoreItem {
       action = j['action'] as String,
       versionId = _in(j['version_id']),
       size = _i(j['size']),
-      detail = j['detail'] as String?;
+      detail = j['detail'] as String?,
+      resolved = j['resolved'] as bool? ?? false;
   final String relativePath;
   final String destination;
   final String action;
   final int? versionId;
   final int size;
   final String? detail;
+
+  /// Writes a resolution saved in the merge editor instead of the stored version.
+  final bool resolved;
 }
 
 class RestoreResult {
@@ -610,12 +614,16 @@ class MergeDraft {
       text = j['text'] as String,
       choices = ((j['choices'] as Map?) ?? const {}).map((k, v) => MapEntry(k.toString(), v.toString())),
       edited = j['edited'] as bool? ?? false,
+      resolved = j['resolved'] as bool? ?? false,
       updatedAt = _dt(j['updated_at']);
   final String path;
   final int versionId;
   final String text;
   final Map<String, String> choices; // hunk index -> disk | version | both
   final bool edited;
+
+  /// Finished: Undo keeps it, and the next restore of this version writes it to the file.
+  final bool resolved;
   final DateTime? updatedAt;
 }
 

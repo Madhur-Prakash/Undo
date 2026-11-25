@@ -7,6 +7,10 @@
 * Drafts ("save progress") are small JSON files in ``<data dir>/merge-drafts``, one per file,
   so an unfinished merge can be resumed later. They are deleted once the file is merged or
   restored.
+* A *resolution* is a draft marked ``resolved``: the finished merge, kept by Undo without
+  touching the file. The next restore of that file and version writes the resolution instead
+  of the stored version (see :func:`resolution_for`), unless the file changed after it was
+  resolved.
 """
 
 from __future__ import annotations
@@ -161,17 +165,23 @@ def save_draft(
     text: str,
     choices: dict[str, str],
     edited: bool,
+    resolution: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """Save progress, or with ``resolution`` (current_hash, line_ending, final_newline) a
+    finished resolution that the next restore applies."""
     if len(text.encode("utf-8")) > 16 * 1024 * 1024:
         raise InvalidInputError("Draft is too large to save")
-    draft = {
+    draft: dict[str, Any] = {
         "path": str(Path(path)),
         "version_id": version_id,
         "text": text,
         "choices": choices,
         "edited": edited,
+        "resolved": resolution is not None,
         "updated_at": utcnow().isoformat(),
     }
+    if resolution is not None:
+        draft.update(resolution)
     target = _draft_file(data_dir, path)
     target.parent.mkdir(parents=True, exist_ok=True)
     tmp = target.with_suffix(".tmp")
@@ -205,6 +215,21 @@ def list_drafts(data_dir: Path) -> list[dict[str, Any]]:
     return out
 
 
+def resolution_for(data_dir: Path, dest: Path, version_id: int) -> tuple[bytes, str | None] | None:
+    """The saved resolution for restoring ``version_id`` to ``dest``: (bytes to write, hash the
+    file had when it was resolved). None if there is no resolution for that version."""
+    draft = load_draft(data_dir, str(dest))
+    if not draft or not draft.get("resolved") or draft.get("version_id") != version_id:
+        return None
+    data = encode_text(
+        str(draft.get("text") or ""),
+        str(draft.get("line_ending") or ("CRLF" if os.name == "nt" else "LF")),
+        final_newline=bool(draft.get("final_newline", True)),
+    )
+    expected = draft.get("current_hash")
+    return data, expected if isinstance(expected, str) else None
+
+
 def delete_drafts(data_dir: Path, paths: list[str]) -> int:
     removed = 0
     for path in paths:
@@ -232,6 +257,7 @@ __all__ = [
     "line_pair",
     "list_drafts",
     "load_draft",
+    "resolution_for",
     "save_draft",
     "write_merged",
 ]

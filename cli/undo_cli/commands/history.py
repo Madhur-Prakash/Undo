@@ -306,14 +306,20 @@ def register(app: typer.Typer) -> None:
         all_choice: str | None = typer.Option(
             None, "--all", help="Answer every difference: disk or version (no questions)"
         ),
-        yes: bool = typer.Option(False, "--yes", "-y", help="With --all: write without asking"),
+        yes: bool = typer.Option(
+            False, "--yes", "-y", help="With --all: save the resolution without asking"
+        ),
     ) -> None:
         """Resolve a restore like a merge conflict, interactively (same rules as the app and TUI).
 
         For each difference between the file on disk (left) and the version (right) choose
-        [d]isk, [v]ersion or [b]oth. Then write the result to the file (its current content is
-        saved as a version first), edit it in your editor, save progress to resume later, or
-        discard. Only files inside tracked folders.
+        [d]isk, [v]ersion or [b]oth. Then save the resolution, edit it in your editor, save
+        progress to resume later, or discard.
+
+        Saving a resolution does not touch the file: Undo keeps it, and the next restore of this
+        version (`undo restore PATH --version N`, or a folder or snapshot restore) writes it
+        instead of the stored version. Resolve several files, then restore once. Only files
+        inside tracked folders.
         """
         from undo_core.recovery.merge import compose_result
 
@@ -332,7 +338,8 @@ def register(app: typer.Typer) -> None:
         draft = src.get("draft")
         if draft and draft.get("version_id") == version_id and all_choice is None:
             if typer.confirm(
-                f"Resume the unfinished merge saved {render.when(draft.get('updated_at'))}?",
+                ("Open the resolution" if draft.get("resolved") else "Resume the unfinished merge")
+                + f" saved {render.when(draft.get('updated_at'))}?",
                 default=True,
             ):
                 for key, value in (draft.get("choices") or {}).items():
@@ -362,22 +369,26 @@ def register(app: typer.Typer) -> None:
         if text is None:
             text = compose_result(src["current_lines"], hunks, choices)
 
-        def write_file() -> bool:
+        def save_resolution() -> None:
             call(
                 ctx,
-                "merge_write",
+                "save_merge_resolution",
                 path=src["path"],
-                text=text,
                 version_id=version_id,
+                text=text,
+                choices={str(k): v for k, v in choices.items()},
+                edited=edited,
                 expected_hash=src["current_hash"],
             )
-            render.success(
-                f"Merged result saved to {src['path']} (its previous content is a version)"
+            render.success(f"Resolution saved for {src['path']}. The file was not changed.")
+            render.console.print(
+                "Apply it by restoring this version: "
+                f'[bold]undo restore "{src["path"]}" --version {version_id}[/bold] '
+                "(or restore its folder or snapshot)."
             )
-            return True
 
         if all_choice is not None and yes:
-            write_file()
+            save_resolution()
             return
         while True:
             summary = ", ".join(f"{i + 1}: {choices[i]}" for i in sorted(choices))
@@ -386,16 +397,15 @@ def register(app: typer.Typer) -> None:
             )
             action = (
                 typer.prompt(
-                    "[w]rite to file / [s]how result / [e]dit in editor / [p] save progress / [x] discard",
+                    "[w] save resolution / [s]how result / [e]dit in editor / [p] save progress / [x] discard",
                     default="w",
                 )
                 .strip()
                 .lower()[:1]
             )
             if action == "w":
-                if typer.confirm(f"Write the merged result to {src['path']}?", default=True):
-                    write_file()
-                    return
+                save_resolution()
+                return
             elif action == "s":
                 render.console.print(Syntax(text, "text", line_numbers=True, word_wrap=True))
             elif action == "e":
@@ -422,31 +432,35 @@ def register(app: typer.Typer) -> None:
     def merge_drafts(
         ctx: typer.Context,
         discard: str | None = typer.Option(
-            None, "--discard", help="Delete the saved progress of this file"
+            None, "--discard", help="Delete the saved merge (progress or resolution) of this file"
         ),
         json_out: bool = typer.Option(False, "--json"),
     ) -> None:
-        """List unfinished merges saved with "save progress" (resume with `undo merge VERSION`)."""
+        """List saved merges: unfinished ones, and resolutions waiting for a restore."""
         if discard:
             call(ctx, "delete_merge_draft", path=_abs(discard))
-            render.success(f"Discarded the unfinished merge of {_abs(discard)}")
+            render.success(f"Discarded the saved merge of {_abs(discard)}")
             return
         drafts = call(ctx, "list_merge_drafts")
         if json_out:
             render.print_json(drafts)
             return
         if not drafts:
-            render.console.print("No unfinished merges.")
+            render.console.print("No saved merges.")
             return
-        t = Table(title="Unfinished merges")
-        for col in ("File", "Version", "Saved", "Resume with"):
+        t = Table(title="Saved merges")
+        for col in ("File", "Version", "State", "Saved", "Next step"):
             t.add_column(col)
         for d in drafts:
+            resolved = bool(d.get("resolved"))
             t.add_row(
                 d["path"],
                 str(d["version_id"]),
+                "[green]resolved[/green]" if resolved else "[yellow]unfinished[/yellow]",
                 render.when(d.get("updated_at")),
-                f"undo merge {d['version_id']}",
+                f'undo restore "{d["path"]}" --version {d["version_id"]}'
+                if resolved
+                else f"undo merge {d['version_id']}",
             )
         render.console.print(t)
 

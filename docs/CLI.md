@@ -89,7 +89,7 @@ Every `undo` command, option and setting. For step-by-step recipes see
 | `undo search QUERY` | Match current and former paths. |
 | `undo show VERSION` | Version details: hash, compression, storage, references, neighbours. |
 | `undo merge VERSION [PATH] [--all disk\|version] [-y]` | Resolve a restore like a merge conflict (details below). |
-| `undo merge-drafts [--discard PATH]` | List unfinished merges (resume with `undo merge VERSION`), or delete one. |
+| `undo merge-drafts [--discard PATH]` | List saved merges (unfinished or resolved), or delete one. |
 | `undo diff-file VERSION [PATH] [-u]` | Compare a version with the file on disk. |
 | `undo diff A B [-u]` | Compare two versions side by side. |
 | `undo cat VERSION` | Print a text version. |
@@ -109,8 +109,10 @@ Every `undo` command, option and setting. For step-by-step recipes see
 * `undo merge`:
   * for each difference: `d` keep disk, `v` use version, `b` both (`--all disk|version` answers
     all at once);
-  * then: write to the file (its current content is saved as a version first), show the result,
-    edit it in your editor, save progress, or discard;
+  * then: `w` save the resolution (the file is not changed), show the result, edit it in your
+    editor, save progress, or discard;
+  * apply a resolution by restoring that version: `undo restore PATH --version N` (or a folder
+    or snapshot restore);
   * offers to resume saved progress;
   * tracked files only; not binary; at most 2 MiB.
 * `undo forget`:
@@ -235,7 +237,7 @@ are added once on upgrade; a default you removed never comes back.
 **Everywhere**
 
 * `1`–`7` switch tabs: Dashboard, Roots, Files, History, Snapshots, Storage, Settings
-* `u` unfinished merges (Enter resume, `x` discard)
+* `u` saved merges (Enter open, `x` discard)
 * `F5` / `Ctrl+R` refresh · `q` quit
 
 **Roots**
@@ -272,7 +274,8 @@ are added once on upgrade; a default you removed never comes back.
 * `n` / `p` next / previous difference
 * `1` keep disk · `2` use version · `3` both · `a` / `v` all disk / all version
 * `e` edit the result (`Esc` back)
-* `Ctrl+S` save to file · `Ctrl+D` save progress · `q` close (asks about unsaved changes)
+* `Ctrl+S` save resolution (the file is not changed; restoring the version applies it)
+* `Ctrl+D` save progress · `q` close (asks about unsaved changes)
 
 **Storage**
 

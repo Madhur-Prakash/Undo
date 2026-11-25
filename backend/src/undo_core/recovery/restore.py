@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,6 +15,7 @@ from undo_core.database.engine import Database
 from undo_core.database.models import File, Operation, Root, Version
 from undo_core.domain import RestoreItem, RestoreResult
 from undo_core.platform.paths import is_within, normalize_path, safe_join
+from undo_core.recovery.merge import content_hash, write_merged
 from undo_core.recovery.restore_safety import RestoreAction, plan_target, write_verified
 from undo_core.roots import find_root_for_path, root_ref
 from undo_core.storage.blob_store import BlobStore
@@ -107,6 +109,37 @@ def select_version(
         return v
 
 
+RESOLVED_DETAIL = "resolved in the merge editor"
+
+
+def _plan_resolved(
+    dest: Path, data: bytes, expected_hash: str | None
+) -> tuple[RestoreAction, str | None]:
+    """What restoring a saved merge resolution to ``dest`` would do.
+
+    The resolution was made against the file as it was then; if the file changed since, it is
+    a conflict and has to be resolved again.
+    """
+    if not os.path.lexists(dest):
+        if expected_hash in (None, content_hash(b"")):
+            return RestoreAction.CREATE, RESOLVED_DETAIL
+        return (
+            RestoreAction.CONFLICT,
+            "the file was deleted after it was resolved; resolve it again",
+        )
+    if dest.is_symlink() or dest.is_dir():
+        return RestoreAction.CONFLICT, "destination is not a regular file"
+    try:
+        current = dest.read_bytes()
+    except OSError as exc:
+        return RestoreAction.ERROR, f"cannot read destination: {exc}"
+    if expected_hash is not None and content_hash(current) != expected_hash:
+        return RestoreAction.CONFLICT, "the file changed after it was resolved; resolve it again"
+    if current == data:
+        return RestoreAction.IDENTICAL, f"{RESOLVED_DETAIL}; the file already has this content"
+    return RestoreAction.OVERWRITE, RESOLVED_DETAIL
+
+
 class RestoreEngine:
     def __init__(self, db: Database, store: BlobStore, capture: CaptureEngine) -> None:
         self.db = db
@@ -114,6 +147,8 @@ class RestoreEngine:
         self.capture = capture
         # Called with the destinations a (non dry-run) restore wrote; used to clear merge drafts.
         self.after_write: Callable[[list[str]], object] | None = None
+        # (dest, version id) -> (resolved bytes, file hash when resolved), from the merge editor
+        self.resolution_for: Callable[[Path, int], tuple[bytes, str | None] | None] | None = None
 
     def _preserve_existing(self, dest: Path) -> tuple[bool, int | None, str | None]:
         """Capture the content about to be overwritten so the overwrite is itself undoable."""
@@ -137,6 +172,17 @@ class RestoreEngine:
             f"could not preserve current content: {result.status.value} {result.detail or ''}",
         )
 
+    def _resolution(self, dest: Path, version_id: int) -> tuple[bytes, str | None] | None:
+        if self.resolution_for is None:
+            return None
+        try:
+            return self.resolution_for(dest, version_id)
+        except (OSError, ValueError) as exc:
+            log.warning(
+                "cannot read merge resolution", extra={"dest": str(dest), "error": str(exc)}
+            )
+            return None
+
     def restore_entries(
         self,
         entries: list[RestoreEntry],
@@ -152,15 +198,22 @@ class RestoreEngine:
         with self.store.pin(hashes, "restore") if not dry_run and hashes else _null():
             for entry in entries:
                 dest = dest_for[entry.relative_path]
-                action, detail = plan_target(dest, entry.blob_hash, entry.size, overwrite=overwrite)
+                resolved = self._resolution(dest, entry.version_id)
+                if resolved is not None:
+                    action, detail = _plan_resolved(dest, resolved[0], resolved[1])
+                else:
+                    action, detail = plan_target(
+                        dest, entry.blob_hash, entry.size, overwrite=overwrite
+                    )
                 item = RestoreItem(
                     relative_path=entry.relative_path,
                     destination=str(dest),
                     action=action.value,
                     version_id=entry.version_id,
                     blob_hash=entry.blob_hash,
-                    size=entry.size,
+                    size=len(resolved[0]) if resolved is not None else entry.size,
                     detail=detail,
+                    resolved=resolved is not None,
                 )
                 if not dry_run and action in (RestoreAction.CREATE, RestoreAction.OVERWRITE):
                     try:
@@ -171,7 +224,11 @@ class RestoreEngine:
                             if pre_vid:
                                 result.pre_restore_versions.append(pre_vid)
                             if note:
-                                item.detail = note
+                                item.detail = f"{detail}; {note}" if resolved else note
+                        if resolved is not None:
+                            write_merged(dest, resolved[0])
+                            result.items.append(item)
+                            continue
                         report = write_verified(
                             self.store,
                             entry.blob_hash,
@@ -206,6 +263,7 @@ class RestoreEngine:
                 i.destination
                 for i in result.items
                 if i.action in (RestoreAction.CREATE.value, RestoreAction.OVERWRITE.value)
+                or (i.resolved and i.action == RestoreAction.IDENTICAL.value)
             ]
             if written:
                 self.after_write(written)

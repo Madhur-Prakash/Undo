@@ -37,7 +37,7 @@ class UndoTUI(App[None]):
         ("q", "quit", "Quit"),
         ("f5", "refresh", "Refresh"),
         ("ctrl+r", "refresh", "Refresh"),
-        ("u", "drafts", "Unfinished merges"),
+        ("u", "drafts", "Saved merges"),
         *[
             (str(i + 1), f"show_tab('{tab_id}')", title)
             for i, (tab_id, title, _cls) in enumerate(TABS)

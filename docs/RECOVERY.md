@@ -44,15 +44,39 @@ In the editor:
 1. Each difference shows the disk on the left and the version on the right. Choose **Keep disk**,
    **Use version** or **Both**, or use *Keep disk for all* / *Use version for all*.
 2. The **Result** below updates from your choices. You can also edit it freely by hand.
-3. **Save to file** writes the result. The file's current content is saved as a version first, so
-   this can be undone, and the save is refused if the file changed since the editor opened.
-4. **Save progress** keeps an unfinished merge. Closing with unsaved changes asks: *Save
+3. **Save resolution** keeps the result with Undo. **The file is not changed.**
+4. **Restore** applies it: the next restore of that version writes your resolution instead of
+   the stored version.
+5. **Save progress** keeps an unfinished merge. Closing with unsaved changes asks: *Save
    progress*, *Discard* or *Keep editing*. Opening the same file's merge again offers to
-   **Resume**. Unfinished merges are listed in the app (*Overview* > **Unfinished merges**),
-   the TUI (`u`) and by `undo merge-drafts`.
+   **Resume**.
 
-* Saved progress is stored in the data directory (`merge-drafts/`), and deleted once the file is
-  merged or restored.
+Resolving several files, then restoring once:
+
+1. In the restore preview, **Resolve** each conflicting file and **Save resolution**.
+2. The preview refreshes; resolved files are marked **RESOLVED**.
+3. Click **Restore**. Every resolved file gets its resolution; the rest restore as usual.
+
+```sh
+undo merge 42                          # resolve, then [w] save resolution
+undo restore ./notes.txt --version 42  # applies it
+```
+
+How a resolution is applied:
+
+* It works for a single file, a folder rollback and a snapshot restore.
+* It is written even without *Overwrite*: you already decided.
+* The file's current content is saved as a version first, so it can be undone.
+* The file's line endings are kept.
+* If the file changed after you resolved it, the restore marks it a **conflict**: resolve it
+  again.
+* Restoring a different version of that file ignores the resolution.
+
+Saved merges are listed in the app (*Overview* > **Saved merges**, with *Restore* for resolved
+files), the TUI (`u`) and by `undo merge-drafts`.
+
+* They are stored in the data directory (`merge-drafts/`), and deleted once the file is
+  restored.
 * Identical files have nothing to resolve; their comparison just says so.
 * Binary files and files over 2 MiB cannot be merged; restore them to another folder instead.
 

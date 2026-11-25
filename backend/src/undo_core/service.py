@@ -662,6 +662,43 @@ class UndoService:
             note=note,
         )
 
+    def save_merge_resolution(
+        self,
+        *,
+        path: str,
+        version_id: int,
+        text: str,
+        choices: dict[str, str] | None = None,
+        edited: bool = False,
+        expected_hash: str | None = None,
+    ) -> MergeDraft:
+        """Keep a finished merge with Undo, without touching the file.
+
+        The next restore of ``version_id`` to ``path`` (alone, or as part of a folder or snapshot
+        restore) writes this text instead of the stored version. If the file changes before
+        that, the restore reports a conflict instead.
+        """
+        target = Path(path)
+        self._tracked_target(target)
+        detail = self.get_version(version_id)
+        stored = self.ctx.store.read_bytes(detail.blob.hash) if detail.blob else b""
+        current = merging.check_unchanged(target, expected_hash)
+        draft = merging.save_draft(
+            self.ctx.paths.data_dir,
+            path=str(target),
+            version_id=version_id,
+            text=text,
+            choices=choices or {},
+            edited=edited,
+            resolution={
+                "current_hash": merging.content_hash(current),
+                "line_ending": merging.detect_line_ending(current, stored),
+                "final_newline": (current or stored).endswith(b"\n"),
+            },
+        )
+        log.info("merge resolution saved", extra={"path": str(target), "version": version_id})
+        return MergeDraft.model_validate(draft)
+
     def list_merge_drafts(self) -> list[MergeDraft]:
         return [MergeDraft.model_validate(d) for d in merging.list_drafts(self.ctx.paths.data_dir)]
 

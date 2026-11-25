@@ -86,6 +86,41 @@ def test_drafts_save_resume_and_clear_on_restore(
     assert service.list_merge_drafts() == []
 
 
+def test_saved_resolution_leaves_file_and_is_applied_by_restore(
+    ctx: UndoContext, service: UndoService, tracked: RootRef
+) -> None:
+    old, _ = _old_and_new(ctx, tracked)
+    src = service.merge_source(old)
+    f = tracked.path / "notes.txt"
+    before = f.read_bytes()
+    draft = service.save_merge_resolution(
+        path=src.path, version_id=old, text="title\nmerged", expected_hash=src.current_hash
+    )
+    assert draft.resolved and f.read_bytes() == before  # the file is not touched
+
+    plan = service.restore_version(old, dry_run=True)  # no overwrite flag needed
+    assert plan.items[0].resolved and plan.items[0].action == "overwrite"
+    result = service.restore_version(old)
+    assert f.read_bytes() == b"title\r\nmerged\r\n"  # the file's line endings are kept
+    assert result.pre_restore_versions  # the previous content was saved first
+    assert service.list_merge_drafts() == []  # cleaned up after the restore
+
+
+def test_resolution_is_a_conflict_if_file_changed(
+    ctx: UndoContext, service: UndoService, tracked: RootRef
+) -> None:
+    old, _ = _old_and_new(ctx, tracked)
+    src = service.merge_source(old)
+    service.save_merge_resolution(
+        path=src.path, version_id=old, text="merged", expected_hash=src.current_hash
+    )
+    f = tracked.path / "notes.txt"
+    write(f, "edited after resolving")
+    result = service.restore_version(old)
+    assert result.items[0].action == "conflict"
+    assert f.read_text() == "edited after resolving"
+
+
 def test_snapshot_names_match_loosely(
     ctx: UndoContext, service: UndoService, tracked: RootRef
 ) -> None:

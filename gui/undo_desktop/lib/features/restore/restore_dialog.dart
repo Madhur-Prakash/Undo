@@ -253,7 +253,15 @@ class _RestoreDialogState extends ConsumerState<RestoreDialog> {
                   return ListTile(
                     leading: SizedBox(
                       width: 80,
-                      child: Text(item.action.toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(item.action.toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+                          if (item.resolved)
+                            Text('RESOLVED', style: TextStyle(color: scheme.primary, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
                     ),
                     title: Text(item.destination, overflow: TextOverflow.ellipsis),
                     subtitle: Text([
@@ -272,7 +280,7 @@ class _RestoreDialogState extends ConsumerState<RestoreDialog> {
                             if (_done == null && item.action != 'identical')
                               TextButton.icon(
                                 icon: const Icon(Icons.merge_type, size: 18),
-                                label: const Text('Resolve'),
+                                label: Text(item.resolved ? 'Edit resolution' : 'Resolve'),
                                 onPressed: _busy ? null : () => _resolve(item),
                               ),
                           ]),

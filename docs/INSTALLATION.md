@@ -112,7 +112,7 @@ Open a **new** terminal. Terminals that were already open still have the old `PA
 close and reopen VS Code. Then run:
 
 ```powershell
-undo --version            # e.g. undo 1.1.0
+undo --version            # e.g. undo 1.1.1
 (Get-Command undo).Source # ...\AppData\Local\Programs\Undo\backend\undo.exe
 undo status               # daemon  running
 undo service status       # autostart at sign-in: installed

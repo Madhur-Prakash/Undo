@@ -15,7 +15,7 @@ contents itself; every action goes through the daemon's local API (`127.0.0.1`, 
 
 | Screen | What you can do |
 |---|---|
-| Overview | Daemon status, tracked folders, storage, recent activity, unfinished merges |
+| Overview | Daemon status, tracked folders, storage, recent activity, saved merges |
 | Files | Find a file and open its history |
 | History | Recent changes in all tracked folders |
 | Snapshots | Create, compare, restore and delete named snapshots of a folder |
@@ -34,7 +34,8 @@ file on disk, delete a version or the file's older history.
 * The preview can be filtered by outcome; conflicts and errors are listed first.
 * Any item can be compared with the file on disk.
 * Conflicts can be resolved in the merge editor: keep disk, use version, or both, or edit the
-  result. Unfinished merges can be saved and resumed.
+  result. *Save resolution* keeps it with Undo; restoring the version applies it. Unfinished
+  merges can be saved and resumed.
 * A file is never overwritten without confirmation, and its current content is saved as a
   version first.
 

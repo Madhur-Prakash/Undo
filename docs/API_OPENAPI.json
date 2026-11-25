@@ -3,7 +3,7 @@
   "info": {
     "title": "Undo local API",
     "description": "Local, token-protected API of the Undo daemon.",
-    "version": "1.1.0"
+    "version": "1.1.1"
   },
   "paths": {
     "/api/v1/ping": {
@@ -1556,6 +1556,53 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/merge/resolution": {
+      "put": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Save Merge Resolution",
+        "description": "Keep a finished merge with Undo; the next restore of that version writes it.",
+        "operationId": "save_merge_resolution_api_v1_merge_resolution_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeResolutionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergeDraft"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/versions/{version_id}": {
@@ -3722,6 +3769,11 @@
             "title": "Edited",
             "default": false
           },
+          "resolved": {
+            "type": "boolean",
+            "title": "Resolved",
+            "default": false
+          },
           "updated_at": {
             "anyOf": [
               {
@@ -3778,6 +3830,52 @@
           "text"
         ],
         "title": "MergeDraftRequest"
+      },
+      "MergeResolutionRequest": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "version_id": {
+            "type": "integer",
+            "title": "Version Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "choices": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Choices"
+          },
+          "edited": {
+            "type": "boolean",
+            "title": "Edited",
+            "default": false
+          },
+          "expected_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Hash"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "version_id",
+          "text"
+        ],
+        "title": "MergeResolutionRequest"
       },
       "MergeSource": {
         "properties": {
@@ -4226,6 +4324,11 @@
               }
             ],
             "title": "Detail"
+          },
+          "resolved": {
+            "type": "boolean",
+            "title": "Resolved",
+            "default": false
           }
         },
         "type": "object",

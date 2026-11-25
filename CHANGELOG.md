@@ -5,6 +5,36 @@ All notable changes to Undo are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and Undo follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-11-26
+
+Resolving a conflict no longer writes the file straight away. Resolve several files, then
+restore them together.
+
+### Changed
+
+- **Save resolution replaces Save to file** in the merge editor (app, TUI `Ctrl+S`, CLI `w`).
+  - The resolved text is kept by Undo; **the file is not changed**.
+  - The next restore of that version writes the resolution instead of the stored version: a
+    single file, a folder rollback or a snapshot restore.
+  - Typical use: in a restore preview, resolve each conflicting file, then click **Restore**
+    once.
+- A resolution is written even without *Overwrite*, since you already decided. The file's
+  current content is still saved as a version first, and its line endings are kept.
+- If the file changed after it was resolved, the restore reports a **conflict** ("resolve it
+  again") instead of overwriting the newer content.
+- Restoring a different version of the file ignores the resolution. Resolutions are deleted once
+  the file is restored.
+- **Saved merges** (was *Unfinished merges*) lists both unfinished merges and resolutions:
+  - App: *Overview* > *Saved merges*, with *Edit* and *Restore* for resolved files.
+  - TUI: `u`. CLI: `undo merge-drafts` (new *State* and *Next step* columns).
+- Restore previews mark resolved files: **RESOLVED** in the app, `(resolved)` in the TUI, and
+  "resolved in the merge editor" in the CLI's detail column.
+
+### Added
+
+- `PUT /api/v1/merge/resolution` and `resolved` fields on `MergeDraft` and `RestoreItem`
+  ([Local API](docs/API.md)). `POST /merge/write` is kept for scripts.
+
 ## [1.1.0] - 2026-11-25
 
 Resolve restores like merge conflicts, compare any version with the file on disk, and rename
@@ -221,5 +251,6 @@ First release.
 - The desktop app cannot connect to a daemon on another machine: the API listens on `127.0.0.1`
   only. On servers, use `undo tui` over SSH.
 
+[1.1.1]: https://github.com/Madhur-Prakash/Undo/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Madhur-Prakash/Undo/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Madhur-Prakash/Undo/releases/tag/v1.0.0

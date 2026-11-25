@@ -153,6 +153,7 @@ class RestoreItem(_Model):
     blob_hash: str | None = None
     size: int = 0
     detail: str | None = None
+    resolved: bool = False  # writes a resolution saved in the merge editor
 
 
 class RestoreResult(_Model):
@@ -423,6 +424,7 @@ class MergeDraft(_Model):
     text: str
     choices: dict[str, str] = Field(default_factory=dict)  # hunk index -> disk | version | both
     edited: bool = False
+    resolved: bool = False  # finished: the next restore of this version writes it
     updated_at: datetime | None = None
 
 

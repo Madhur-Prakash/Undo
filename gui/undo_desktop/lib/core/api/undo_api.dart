@@ -133,6 +133,23 @@ class UndoApi {
         'edited': edited,
       })));
 
+  /// Keep a finished merge with Undo without touching the file; the next restore of
+  /// [versionId] to [path] writes it.
+  Future<MergeDraft> saveMergeResolution(String path,
+          {required int versionId,
+          required String text,
+          required Map<String, String> choices,
+          required bool edited,
+          String? expectedHash}) async =>
+      MergeDraft.fromJson(_m(await _req<Object>('PUT', '/merge/resolution', body: {
+        'path': path,
+        'version_id': versionId,
+        'text': text,
+        'choices': choices,
+        'edited': edited,
+        'expected_hash': expectedHash,
+      })));
+
   Future<void> deleteMergeDraft(String path) => _req<Object>('DELETE', '/merge/draft', query: {'path': path});
 
   // ----------------------------------------------------------------- restore

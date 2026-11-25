@@ -105,11 +105,14 @@ class _MergeEditorState extends ConsumerState<_MergeEditor> {
     final resume = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Resume saved progress?'),
-        content: Text('You saved an unfinished merge of this file on ${formatDateTime(draft.updatedAt)}.'),
+        title: Text(draft.resolved ? 'Open your resolution?' : 'Resume saved progress?'),
+        content: Text(draft.resolved
+            ? 'You resolved this file on ${formatDateTime(draft.updatedAt)}. It is applied when you restore this version.'
+            : 'You saved an unfinished merge of this file on ${formatDateTime(draft.updatedAt)}.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Start over')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Resume')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true), child: Text(draft.resolved ? 'Open' : 'Resume')),
         ],
       ),
     );
@@ -224,27 +227,22 @@ class _MergeEditorState extends ConsumerState<_MergeEditor> {
     });
   }
 
+  /// Keeps the result with Undo; the file is not touched. Restoring this version applies it.
   Future<void> _write() async {
     final source = _source;
     if (source == null) return;
-    final ok = await confirmDialog(
-      context,
-      title: 'Save the merged result to the file?',
-      message: '${source.path}\n\n'
-          '${source.exists ? 'The file\'s current content is saved as a version first, so this can be undone.' : 'The file is created.'}',
-      confirm: 'Save to file',
-    );
-    if (!ok || !mounted) return;
     setState(() => _busy = true);
     final r = await runAction(
       context,
-      () => ref.read(apiProvider).mergeWrite(
+      () => ref.read(apiProvider).saveMergeResolution(
             source.path,
-            _result.text,
             versionId: widget.versionId,
+            text: _result.text,
+            choices: {for (final e in _choices.entries) '${e.key}': e.value.name},
+            edited: _edited,
             expectedHash: source.currentHash,
           ),
-      success: 'Merged result saved to ${source.path}',
+      success: 'Resolution saved; the file is unchanged. Restore this version to apply it.',
     );
     if (!mounted) return;
     setState(() => _busy = false);
@@ -390,8 +388,8 @@ class _MergeEditorState extends ConsumerState<_MergeEditor> {
               const SizedBox(width: 8),
               FilledButton.icon(
                 onPressed: _busy ? null : _write,
-                icon: const Icon(Icons.restore),
-                label: const Text('Save to file'),
+                icon: const Icon(Icons.check),
+                label: const Text('Save resolution'),
               ),
             ]),
           ],

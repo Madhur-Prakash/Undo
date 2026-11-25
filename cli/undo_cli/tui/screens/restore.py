@@ -123,7 +123,7 @@ class RestoreModal(ModalScreen[dict[str, Any] | None]):
         )
         for item in self.rows:
             table.add_row(
-                item["action"],
+                item["action"] + (" (resolved)" if item.get("resolved") else ""),
                 item["destination"],
                 str(item.get("version_id") or "-"),
                 size(item["size"]),
@@ -149,7 +149,7 @@ class RestoreModal(ModalScreen[dict[str, Any] | None]):
 
         def done(written: bool | None) -> None:
             if written:
-                self.run_op(True)  # preview again with the merged file
+                self.run_op(True)  # preview again: the file now shows as resolved
 
         self.app.push_screen(MergeScreen(item["version_id"], item["destination"]), done)
 

@@ -1,6 +1,6 @@
 [project]
 name = "undo-core"
-version = "1.1.0"
+version = "1.1.1"
 description = "Undo backend: content-addressed file version history, filesystem monitoring daemon and local API."
 license = { text = "MIT" }
 authors = [{ name = "Madhur Prakash Mangal" }]

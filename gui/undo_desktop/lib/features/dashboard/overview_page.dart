@@ -316,7 +316,8 @@ class _RecentSnapshots extends ConsumerWidget {
 }
 
 
-/// Unfinished merges saved with "Save progress": resume or discard them. Hidden when none.
+/// Saved merges: unfinished ones ("Save progress") and resolutions waiting for a restore.
+/// Hidden when none.
 class _MergeDraftsCard extends ConsumerWidget {
   const _MergeDraftsCard();
 
@@ -327,21 +328,23 @@ class _MergeDraftsCard extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: SectionCard(
-        title: 'Unfinished merges (${drafts.length})',
+        title: 'Saved merges (${drafts.length})',
         padding: EdgeInsets.zero,
         child: Column(children: [
           for (final d in drafts)
             ListTile(
-              leading: const Icon(Icons.merge_type),
+              leading: Icon(d.resolved ? Icons.task_alt : Icons.merge_type),
               title: Text(d.path, overflow: TextOverflow.ellipsis),
-              subtitle: Text('Version ${d.versionId} · progress saved ${formatRelative(d.updatedAt)}'),
+              subtitle: Text(d.resolved
+                  ? 'Version ${d.versionId} · resolved ${formatRelative(d.updatedAt)} · applied when you restore this version'
+                  : 'Version ${d.versionId} · progress saved ${formatRelative(d.updatedAt)}'),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                 TextButton(
                   onPressed: () async {
                     final ok = await confirmDialog(
                       context,
-                      title: 'Discard saved progress?',
-                      message: '${d.path}\n\nThe unfinished merge is deleted. The file is not touched.',
+                      title: d.resolved ? 'Discard the resolution?' : 'Discard saved progress?',
+                      message: '${d.path}\n\nThe saved merge is deleted. The file is not touched.',
                       confirm: 'Discard',
                       destructive: true,
                     );
@@ -351,14 +354,49 @@ class _MergeDraftsCard extends ConsumerWidget {
                   },
                   child: const Text('Discard'),
                 ),
-                FilledButton.icon(
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Resume'),
-                  onPressed: () async {
-                    await showMergeEditor(context, versionId: d.versionId, path: d.path);
-                    ref.invalidate(mergeDraftsProvider);
-                  },
-                ),
+                if (d.resolved) ...[
+                  TextButton(
+                    onPressed: () async {
+                      await showMergeEditor(context, versionId: d.versionId, path: d.path);
+                      ref.invalidate(mergeDraftsProvider);
+                    },
+                    child: const Text('Edit'),
+                  ),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.restore),
+                    label: const Text('Restore'),
+                    onPressed: () async {
+                      final ok = await confirmDialog(
+                        context,
+                        title: 'Restore with your resolution?',
+                        message: '${d.path}\n\nThe resolved text is written to the file. Its current '
+                            'content is saved as a version first, so this can be undone.',
+                        confirm: 'Restore',
+                      );
+                      if (!ok || !context.mounted) return;
+                      final r = await runAction(
+                        context,
+                        () => ref.read(apiProvider).restoreVersion(d.versionId, destination: d.path, dryRun: false),
+                      );
+                      if (r != null && context.mounted) {
+                        final item = r.items.firstOrNull;
+                        final ok = item != null && (item.action == 'overwrite' || item.action == 'create' || item.action == 'identical');
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(ok ? 'Restored ${d.path}' : 'Not restored: ${item?.detail ?? 'unknown reason'}'),
+                        ));
+                      }
+                      refreshAll(ref);
+                    },
+                  ),
+                ] else
+                  FilledButton.icon(
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Resume'),
+                    onPressed: () async {
+                      await showMergeEditor(context, versionId: d.versionId, path: d.path);
+                      ref.invalidate(mergeDraftsProvider);
+                    },
+                  ),
               ]),
             ),
         ]),

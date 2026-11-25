@@ -10,6 +10,7 @@ from undo_core.api.schemas import (
     DeleteVersionsRequest,
     ForgetRequest,
     MergeDraftRequest,
+    MergeResolutionRequest,
     MergeWriteRequest,
 )
 from undo_core.domain import (
@@ -113,6 +114,21 @@ def save_merge_draft(
         text=body.text,
         choices=body.choices,
         edited=body.edited,
+    )
+
+
+@router.put("/merge/resolution", response_model=MergeDraft)
+def save_merge_resolution(
+    body: MergeResolutionRequest, service: UndoService = Depends(get_service)
+) -> MergeDraft:
+    """Keep a finished merge with Undo; the next restore of that version writes it."""
+    return service.save_merge_resolution(
+        path=body.path,
+        version_id=body.version_id,
+        text=body.text,
+        choices=body.choices,
+        edited=body.edited,
+        expected_hash=body.expected_hash,
     )
 
 

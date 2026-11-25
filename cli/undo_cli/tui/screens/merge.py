@@ -71,7 +71,7 @@ class MergeScreen(Screen[bool]):
         ("e", "edit", "Edit result"),
         ("q", "close", "Close"),
         ("escape", "back", "Back"),
-        ("ctrl+s", "write", "Save to file"),
+        ("ctrl+s", "write", "Save resolution"),
         ("ctrl+d", "save_draft", "Save progress"),
     ]
 
@@ -137,9 +137,13 @@ class MergeScreen(Screen[bool]):
 
             self.app.push_screen(
                 ConfirmModal(
-                    f"You saved an unfinished merge of this file ({render.when(draft.get('updated_at'))}).\n"
-                    "Resume it?",
-                    "Resume",
+                    (
+                        "You resolved this file already"
+                        if draft.get("resolved")
+                        else "You saved an unfinished merge of this file"
+                    )
+                    + f" ({render.when(draft.get('updated_at'))}).\nOpen it?",
+                    "Open",
                     "primary",
                 ),
                 resume,
@@ -173,7 +177,7 @@ class MergeScreen(Screen[bool]):
             f"[bold]Resolve {self.source['path']}[/bold]  ·  left: on disk now  ·  right: version "
             f"{self.version_id}\nDifference {self.current + 1} of {n}: [b]{choice}[/b]  ·  {state}\n"
             "[dim]n/p move · 1 keep disk · 2 use version · 3 both · a/v all · e edit result "
-            "(Esc back) · Ctrl+S save to file · Ctrl+D save progress · q close[/dim]"
+            "(Esc back) · Ctrl+S save resolution · Ctrl+D save progress · q close[/dim]"
         )
         self.query_one("#result-label", Static).update(
             "[bold]Result[/bold] "
@@ -295,27 +299,8 @@ class MergeScreen(Screen[bool]):
         self.app.call_from_thread(done)
 
     def action_write(self) -> None:
-        if self.source is None:
-            return
-        exists = self.source["exists"]
-
-        def confirmed(ok: bool | None) -> None:
-            if ok:
-                self.write()
-
-        self.app.push_screen(
-            ConfirmModal(
-                f"Save the merged result to\n{self.source['path']}?\n"
-                + (
-                    "Its current content is saved as a version first, so this can be undone."
-                    if exists
-                    else "The file is created."
-                ),
-                "Save to file",
-                "primary",
-            ),
-            confirmed,
-        )
+        if self.source is not None:
+            self.write()
 
     @work(thread=True, group="merge-op")
     def write(self) -> None:
@@ -324,21 +309,26 @@ class MergeScreen(Screen[bool]):
         text = self.app.call_from_thread(lambda: self.query_one("#result", TextArea).text)
         try:
             self.app.backend.call(  # type: ignore[attr-defined]
-                "merge_write",
+                "save_merge_resolution",
                 path=self.source["path"],
-                text=text,
                 version_id=self.version_id,
+                text=text,
+                choices={str(k): v for k, v in self.choices.items()},
+                edited=self.edited,
                 expected_hash=self.source["current_hash"],
             )
         except UndoError as exc:
             self.app.call_from_thread(self.app.notify, exc.message, severity="error")
             return
-        self.app.call_from_thread(self.app.notify, f"Merged result saved to {self.source['path']}")
+        self.app.call_from_thread(
+            self.app.notify,
+            "Resolution saved; the file is unchanged. Restore this version to apply it.",
+        )
         self.app.call_from_thread(self.dismiss, True)
 
 
 class DraftsModal(ModalScreen[None]):
-    """Unfinished merges: Enter resumes, x discards."""
+    """Saved merges (unfinished, or resolved and waiting for a restore): Enter opens, x discards."""
 
     DEFAULT_CSS = """
     DraftsModal { align: center middle; }
@@ -358,12 +348,13 @@ class DraftsModal(ModalScreen[None]):
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label(
-                "[bold]Unfinished merges[/bold]  [dim]Enter resume · x discard · Esc close[/dim]"
+                "[bold]Saved merges[/bold]  [dim]Enter open · x discard · Esc close · "
+                "resolved files are applied by restoring their version[/dim]"
             )
             yield DataTable(id="drafts", cursor_type="row", zebra_stripes=True)
 
     def on_mount(self) -> None:
-        self.query_one(DataTable).add_columns("File", "Version", "Saved")
+        self.query_one(DataTable).add_columns("File", "Version", "State", "Saved")
         self.load()
 
     @work(thread=True, exclusive=True)
@@ -380,9 +371,14 @@ class DraftsModal(ModalScreen[None]):
         table = self.query_one(DataTable)
         table.clear()
         for d in drafts:
-            table.add_row(d["path"], str(d["version_id"]), render.when(d.get("updated_at")))
+            table.add_row(
+                d["path"],
+                str(d["version_id"]),
+                "resolved" if d.get("resolved") else "unfinished",
+                render.when(d.get("updated_at")),
+            )
         if not drafts:
-            self.app.notify("No unfinished merges.")
+            self.app.notify("No saved merges.")
 
     def _selected(self) -> dict[str, Any] | None:
         table = self.query_one(DataTable)
@@ -412,7 +408,7 @@ class DraftsModal(ModalScreen[None]):
                 self.discard(d["path"])
 
         self.app.push_screen(
-            ConfirmModal(f"Discard the unfinished merge of\n{d['path']}?", "Discard", "error"),
+            ConfirmModal(f"Discard the saved merge of\n{d['path']}?", "Discard", "error"),
             confirmed,
         )
 

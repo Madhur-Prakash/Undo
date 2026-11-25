@@ -21,7 +21,7 @@ undo-data/
 ├── staging/             in-progress writes (cleaned at startup)
 ├── trash/               objects being removed by an in-flight garbage collection
 ├── quarantine/          corrupt objects replaced during repair
-├── merge-drafts/        saved progress of unfinished merges (deleted once the file is restored)
+├── merge-drafts/        saved merges: progress and resolutions (deleted once the file is restored)
 └── logs/undo.log        JSON-lines log, rotated (10 MiB × 5)
 ```
 
