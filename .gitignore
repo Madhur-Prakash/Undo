@@ -29,3 +29,6 @@ gui/installer/Undo-linux.*
 *.swp
 .DS_Store
 Thumbs.db
+
+# Release files kept locally (setup .exe, Linux .tar.gz)
+releases/
