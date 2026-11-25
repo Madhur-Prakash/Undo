@@ -21,6 +21,7 @@ gui/undo_desktop/.flutter-plugins
 gui/undo_desktop/.flutter-plugins-dependencies
 gui/undo_desktop/**/ephemeral/
 gui/installer/Undo-Setup-*.exe
+gui/installer/Undo-linux.*
 
 # Editors / OS
 .idea/
