@@ -121,17 +121,45 @@ uv installs for you.
 
 ## Installation
 
-| Machine | How |
-|---|---|
-| **Windows 10/11** | Download `Undo-Setup-<version>.exe` from the **[latest release](https://github.com/Madhur-Prakash/Undo/releases/latest)** and run it (or build it from [`gui/installer/Undo.iss`](gui/installer/Undo.iss)). It needs no admin rights or Python. It installs the app, the `undo` command and the daemon, and can start the daemon at sign-in. |
-| **Linux server** | Install with uv, `undo init`, `undo track /path`, then `undo service install` and `sudo loginctl enable-linger $USER`. Use `undo tui` over SSH. |
-| **Linux desktop** | Unpack the release archive from `python scripts/build.py` and run `./installer/install.sh`. It installs the app with a menu entry and the systemd user service. |
+Downloads are on the **[latest release](https://github.com/Madhur-Prakash/Undo/releases/latest)**.
 
-* Step-by-step instructions for each, with checks after every step:
-  **[docs/INSTALLATION.md](docs/INSTALLATION.md)**.
-* That guide also covers the inotify limit, system services, updating, uninstalling and building
-  the installer.
-* Tested on Windows 11 and on an Ubuntu server. The Linux desktop app is not yet tested.
+### Windows 10/11
+
+* Download `Undo-Setup-<version>.exe` and run it.
+* No admin rights or Python needed.
+* It installs the desktop app, the `undo` command and the background service, and can start the
+  service at sign-in.
+
+### Linux server
+
+```sh
+curl -LO https://github.com/Madhur-Prakash/Undo/releases/latest/download/undo-linux.tar.gz
+tar xzf undo-linux.tar.gz
+cd undo-linux
+./installer/install.sh --no-desktop
+```
+
+Then track a folder, and keep the service running after you log out:
+
+```sh
+undo track ~/my-project
+sudo loginctl enable-linger "$USER"
+```
+
+Use `undo tui` over SSH.
+
+### Linux desktop
+
+* Build the release archive on Linux with Flutter installed (`python3 scripts/build.py`).
+* Unpack it and run `./installer/install.sh`. It adds the app to your menu and installs the
+  service.
+* Not yet tested.
+
+### More
+
+* Step by step, with a check after every step: **[docs/INSTALLATION.md](docs/INSTALLATION.md)**.
+* It also covers the inotify limit, system services, updating, uninstalling and building the
+  installer.
 
 ### From source
 
@@ -277,22 +305,22 @@ Guarantees and failure handling: [docs/RECOVERY.md](docs/RECOVERY.md).
 
 Start at the **[documentation index](docs/README.md)**, which says where to look for each task.
 
-| Document | Contents |
+| Document | About |
 |---|---|
-| [docs/INSTALLATION.md](docs/INSTALLATION.md) | Windows installer, Linux server, Linux desktop, from source; services, upgrading, uninstalling, building the installer |
-| [docs/CLI.md](docs/CLI.md) | Every `undo` command and option, settings reference |
-| [docs/RECOVERY.md](docs/RECOVERY.md) | Getting files back in common situations, and the limits of what Undo protects |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the daemon, storage, database, API and interfaces fit together |
-| [docs/STORAGE.md](docs/STORAGE.md) | Content-addressed storage, compression, deduplication, integrity and garbage collection |
-| [docs/API.md](docs/API.md) | The local HTTP API ([OpenAPI schema](docs/API_OPENAPI.json)) |
-| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common problems and their fixes |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Dev setup, running each part, tests and checks, trying changes on a real install, releasing |
-| [gui/undo_desktop/README.md](gui/undo_desktop/README.md) | The desktop app: screens, how it finds the daemon, building it, code layout |
-| [gui/installer/Undo.iss](gui/installer/Undo.iss) | The Windows installer script (Inno Setup 7); comments at the top explain the build |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to report bugs, suggest features and contribute code |
-| [SECURITY.md](SECURITY.md) | Supported versions and how to report a vulnerability privately |
-| [CHANGELOG.md](CHANGELOG.md) | Changes in each version |
-| [LICENSE](LICENSE) | MIT license |
+| [Installation](docs/INSTALLATION.md) | Installing, updating, removing |
+| [CLI reference](docs/CLI.md) | Every command, option and setting |
+| [Recovery](docs/RECOVERY.md) | Getting files back; resolving conflicts |
+| [Troubleshooting](docs/TROUBLESHOOTING.md) | Problems and fixes |
+| [Architecture](docs/ARCHITECTURE.md) | How the parts fit together |
+| [Storage](docs/STORAGE.md) | How file contents are stored and kept |
+| [Local API](docs/API.md) | The daemon's HTTP API |
+| [Development](docs/DEVELOPMENT.md) | Working on the code, releasing |
+| [Desktop app](gui/undo_desktop/README.md) | The app's screens and code |
+| [Windows installer](gui/installer/Undo.iss) | The Inno Setup script |
+| [Contributing](CONTRIBUTING.md) | Bugs, ideas, pull requests |
+| [Security](SECURITY.md) | Reporting a vulnerability |
+| [Changelog](CHANGELOG.md) | Changes in each version |
+| [License](LICENSE) | MIT |
 
 ## Development
 
@@ -311,16 +339,23 @@ bash scripts/update_windows.sh      # Windows (Git Bash): build the installer fr
 bash scripts/update_linux.sh        # Linux: reinstall from this checkout and restart the daemon
 ```
 
-Full guide: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**. Before opening a pull request, read
-**[CONTRIBUTING.md](CONTRIBUTING.md)**. Security problems: see **[SECURITY.md](SECURITY.md)**
-(please report them privately, not as issues).
+* Full guide: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
+* Before opening a pull request: **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+* Security problems: **[SECURITY.md](SECURITY.md)** (report them privately, not as issues).
 
-| Script | Purpose |
+| Script | Does |
 |---|---|
 | [scripts/dev.py](scripts/dev.py) | Task runner behind `make` and `./make.sh` |
-| [scripts/build.py](scripts/build.py) | Python wheels, desktop build, Linux release archive |
-| [scripts/release.py](scripts/release.py) | `python scripts/release.py X.Y.Z` sets the version everywhere |
-| [scripts/update_linux.sh](scripts/update_linux.sh) | Update a Linux install to the checked-out code and restart the daemon (`--pull` to `git pull` first) |
-| [scripts/update_windows.sh](scripts/update_windows.sh) | Build the Windows installer from the checked-out code and install it silently (Git Bash) |
+| [scripts/build.py](scripts/build.py) | Wheels, app build, Linux release archive |
+| [scripts/release.py](scripts/release.py) | Sets the version everywhere |
+| [scripts/update_linux.sh](scripts/update_linux.sh) | Updates a Linux install from the checkout |
+| [scripts/update_windows.sh](scripts/update_windows.sh) | Builds and installs the Windows installer |
+
+```sh
+python scripts/release.py 1.2.0           # set a new version
+python3 scripts/build.py                  # Linux: wheels + dist/undo-linux.tar.gz
+bash scripts/update_linux.sh --pull       # Linux: git pull, reinstall, restart the service
+bash scripts/update_windows.sh            # Windows (Git Bash): build the installer and install it
+```
 
 License: MIT (see [LICENSE](LICENSE)). Changes in each version: [CHANGELOG.md](CHANGELOG.md).

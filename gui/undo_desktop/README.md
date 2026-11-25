@@ -15,20 +15,30 @@ contents itself; every action goes through the daemon's local API (`127.0.0.1`, 
 
 | Screen | What you can do |
 |---|---|
-| Overview | Daemon status, tracked folders (add, roll back to a point in time, pause, rescan, remove), storage summary, recent activity |
-| Files | Browse a tracked folder, open any file's history, restore a version, delete single versions or the file's (older) history |
-| History | Recent changes across all tracked folders; version details, content preview, and a side-by-side comparison with the previous version (switchable to inline) |
+| Overview | Daemon status, tracked folders, storage, recent activity, unfinished merges |
+| Files | Find a file and open its history |
+| History | Recent changes in all tracked folders |
 | Snapshots | Create, compare, restore and delete named snapshots of a folder |
-| Storage | Usage and deduplication savings, verify stored data, apply retention, garbage collection |
-| Settings | Every setting the CLI can change: compression, chunk deduplication, retention (rules, quota, how often it runs), monitoring, exclusions, capture and performance, maintenance schedule and log level, local API, appearance. Shows where `config.json` is. |
+| Storage | Usage, verify, retention, garbage collection |
+| Settings | Every setting the CLI can change |
 
-Restoring always shows what will happen first: the preview can be filtered by outcome, any
-item can be compared with the file on disk, and conflicts can be resolved in a merge editor
-(keep disk, use version, or both, or edit the result; unfinished merges can be saved and
-resumed). See [Recovery › Comparing and resolving conflicts](../../docs/RECOVERY.md#comparing-and-resolving-conflicts).
+**On a tracked folder** (*Overview*): roll back to a point in time, delete history, pause, scan
+now, stop tracking.
 
-Restoring always shows what will happen first. A file is never overwritten without confirmation,
-and the current content is saved as a version before it is replaced.
+**On a file** (its history): restore a version, compare two versions, compare a version with the
+file on disk, delete a version or the file's older history.
+
+**Restoring:**
+
+* Always shows a preview first.
+* The preview can be filtered by outcome; conflicts and errors are listed first.
+* Any item can be compared with the file on disk.
+* Conflicts can be resolved in the merge editor: keep disk, use version, or both, or edit the
+  result. Unfinished merges can be saved and resumed.
+* A file is never overwritten without confirmation, and its current content is saved as a
+  version first.
+
+More: [Recovery › Comparing and resolving conflicts](../../docs/RECOVERY.md#comparing-and-resolving-conflicts).
 
 ## How it finds the daemon
 
@@ -71,16 +81,27 @@ It bundles this app with the backend (`undo.exe`, `undo-daemon.exe`) into one se
 |---|---|
 | `lib/main.dart` | Entry point |
 | `lib/app/` | App widget, routes (GoRouter), the sidebar shell |
-| `lib/core/api/` | `discovery.dart`: data directory, daemon discovery and start. `undo_api.dart`: typed API client (Dio) |
+| `lib/core/api/` | Finding and starting the daemon; the API client |
 | `lib/core/models/` | Data classes for API responses |
 | `lib/core/providers/` | Riverpod providers: the daemon connection and backend-backed data |
 | `lib/core/theme/`, `lib/core/util/` | Light and dark themes; size, time and path formatting |
-| `lib/features/` | One folder per screen, plus the version-details and restore dialogs |
+| `lib/features/` | One folder per screen, plus the dialogs |
 | `lib/shared/widgets.dart` | Shared widgets, confirmation dialogs, the folder picker |
-| `windows/runner/` | Native Windows host. `flutter_window.cpp` implements the folder picker on the `undo/native` channel. `main.cpp` sets the window title and size and holds the `UndoDesktopRunning` mutex the installer checks for. |
+| `windows/runner/` | Native Windows host (see below) |
 | `linux/` | Native Linux host |
 | `assets/undo.png` | Sidebar logo (the app icon, 256 px) |
-| `test/` | Unit tests for models and formatting |
+| `test/` | Unit and widget tests |
+
+Notes:
+
+* `lib/core/api/discovery.dart` finds the data directory and the daemon, and starts the daemon.
+  `undo_api.dart` is the typed API client (Dio).
+* `windows/runner/flutter_window.cpp` implements the native folder picker on the `undo/native`
+  channel, so the app needs no Flutter plugins.
+* `windows/runner/main.cpp` sets the window title and size, and holds the `UndoDesktopRunning`
+  mutex the installer checks for.
+* `lib/features/restore/merge_editor.dart` is the merge editor; `lib/features/history/diff_view.dart`
+  the side-by-side comparison.
 
 ---
 

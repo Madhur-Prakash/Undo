@@ -203,9 +203,10 @@ sha256sum dist/undo-linux.tar.gz      # line for SHA256SUMS.txt
 scp user@server:~/undo/dist/undo-linux.tar.gz .
 ```
 
-6. Write `SHA256SUMS.txt` with one line per file (`sha256sum Undo-Setup-X.Y.Z.exe undo-linux.tar.gz`).
-7. Commit, tag `vX.Y.Z`, push, and attach `Undo-Setup-X.Y.Z.exe`, `undo-linux.tar.gz` and
-   `SHA256SUMS.txt` to a GitHub release.
+6. Optional: write `SHA256SUMS.txt` with one line per file
+   (`sha256sum Undo-Setup-X.Y.Z.exe undo-linux.tar.gz > SHA256SUMS.txt`) so people can check downloads.
+7. Commit, tag `vX.Y.Z`, push, and attach `Undo-Setup-X.Y.Z.exe` and `undo-linux.tar.gz` (and
+   `SHA256SUMS.txt`, if made) to a GitHub release.
 
 ## Conventions
 

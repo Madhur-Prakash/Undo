@@ -54,7 +54,7 @@ random port is used). The actual address is in `<data>/daemon.json`.
 | `GET /versions/{id}/merge-source?path=` | | `MergeSource`: both sides as lines, hunks, `current_hash`, line ending, saved draft |
 | `POST /merge/write` | `{path, text, version_id, expected_hash}` | `MergeWriteResult` (refused if the file changed since `expected_hash`) |
 | `GET /merge/drafts` · `PUT /merge/draft` · `DELETE /merge/draft?path=` | `{path, version_id, text, choices, edited}` | saved merge progress |
-| `GET /versions/diff?a=&b=` | | `VersionDiff`: `hunks` (side-by-side rows with changed-character spans), unified `diff` text, `added`, `removed`, `note` |
+| `GET /versions/diff?a=&b=` | | `VersionDiff` (side-by-side `hunks`, unified `diff`) |
 | `POST /history/forget` | `{path, before?, dry_run}` | `ForgetResult` |
 | `POST /versions/delete` | `{version_ids, dry_run}` | `ForgetResult` |
 | `POST /restore` | `{path, version_id?, at?, before_version_id?, destination?, overwrite, dry_run}` | `RestoreResult` |

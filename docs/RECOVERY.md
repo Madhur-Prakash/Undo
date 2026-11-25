@@ -51,9 +51,10 @@ In the editor:
    **Resume**. Unfinished merges are listed in the app (*Overview* > **Unfinished merges**),
    the TUI (`u`) and by `undo merge-drafts`.
 
-Saved progress is stored in the data directory (`merge-drafts/`) and deleted automatically once
-the file is merged or restored. Identical files have nothing to resolve; their comparison just
-says so. Binary files and files over 2 MiB cannot be merged; restore them to another folder.
+* Saved progress is stored in the data directory (`merge-drafts/`), and deleted once the file is
+  merged or restored.
+* Identical files have nothing to resolve; their comparison just says so.
+* Binary files and files over 2 MiB cannot be merged; restore them to another folder instead.
 
 ## Rolling back a whole folder
 

@@ -34,17 +34,30 @@ Every `undo` command, option and setting. For step-by-step recipes see
 |---|---|
 | `undo init` | Create data directory, settings, database (migrations) and API token. Idempotent. |
 | `undo config [--path] [--json]` | Show data/settings/log locations, daemon URL, autostart state. |
-| `undo doctor [--json]` | Check writability, database integrity, disk space, token permissions, roots, blob health, monitoring backend, inotify limits. Exit 1 on errors. |
+| `undo doctor [--json]` | Health checks; exit 1 on errors (details below). |
 
 ## Tracking
 
 | Command | Description |
 |---|---|
-| `undo track PATH [--no-scan]` | Track a folder and everything below it. Relative paths such as `.` are resolved first. Overlapping roots, the data directory and (installed builds) Undo's program folder are refused. With a daemon running the first scan happens in the background; without one it runs in the terminal (`--no-scan` skips it). |
+| `undo track PATH [--no-scan]` | Track a folder and everything below it (details below). |
 | `undo untrack PATH\|ID [--purge] [-y]` | Stop monitoring; history kept. `--purge` deletes the root's history (data reclaimed by `gc`). |
 | `undo roots` | List roots with file/version counts, last scan and monitoring mode. |
 | `undo scan [PATH\|ID] [--deep]` | Reconcile now (all roots, one root, or a sub-directory). `--deep` re-hashes every file. |
-| `undo skipped [--root R] [-n N]` | Files not captured and why (`excluded:<pattern>`, `too_large`, `permission_denied`, `symlink_not_followed`, `temporarily_unavailable`, …). |
+| `undo skipped [--root R] [-n N]` | Files not captured, and why. |
+
+**Details:**
+
+* `undo track`:
+  * relative paths such as `.` are resolved first;
+  * overlapping folders, the data directory and (installed builds) Undo's program folder are
+    refused;
+  * with the daemon running, the first scan happens in the background; without it, in the
+    terminal (`--no-scan` skips it).
+* `undo skipped` reasons: `excluded:<pattern>`, `too_large`, `permission_denied`,
+  `symlink_not_followed`, `temporarily_unavailable`.
+* `undo doctor` checks: writability, database integrity, disk space, token permissions, roots,
+  stored-data health, monitoring backend, inotify limits.
 
 ## Daemon
 
@@ -55,9 +68,15 @@ Every `undo` command, option and setting. For step-by-step recipes see
 | `undo restart` | Stop and start. |
 | `undo status [--json]` | Daemon state, queue, watchers, recent errors, totals. Works without a daemon. |
 | `undo logs [-n N] [-f] [--raw]` | Show / follow the JSON log, pretty-printed. |
-| `undo service install [--system]` | Autostart. Linux: systemd user unit (`--system` as root for a system unit). Windows: starts the daemon at sign-in through the per-user Run key (value `Undo`; no admin needed), and starts it now. |
+| `undo service install [--system]` | Start the daemon automatically, and now (details below). |
 | `undo service status` | Whether autostart is installed. Windows: the registered command. Linux: `systemctl --user is-enabled undo`. |
 | `undo service uninstall [--system]` | Removes autostart. A running daemon keeps running until `undo stop`. |
+
+**`undo service install`:**
+
+* Linux: a systemd user unit; `--system` (as root) installs a system unit.
+* Windows: the value `Undo` in your per-user Run key; starts at sign-in, no admin needed.
+* It also starts the daemon right away.
 
 ## History
 
@@ -65,17 +84,40 @@ Every `undo` command, option and setting. For step-by-step recipes see
 |---|---|
 | `undo history PATH [-n N]` | File summary, former paths and every version (operation, time, size, hash). |
 | `undo versions PATH` | Compact list of version ids. |
-| `undo files [QUERY] [--root R] [-d] [-s KEY] [-r]` | List tracked files. `--sort` by `path` (default), `modified`, `size`, `version` (latest change) or `versions` (number of versions); `-d` includes deleted files. |
+| `undo files [QUERY] [--root R] [-d] [-s KEY] [-r]` | List tracked files (sorting below). |
 | `undo log [-n N] [--since 1d] [--root R] [-s KEY] [-r]` | Recent changes across roots, newest first. `--sort` by `time`, `path`, `size` or `operation`. |
 | `undo search QUERY` | Match current and former paths. |
 | `undo show VERSION` | Version details: hash, compression, storage, references, neighbours. |
-| `undo merge VERSION [PATH] [--all disk\|version] [-y]` | Resolve a restore like a merge conflict, interactively: for each difference [d]isk / [v]ersion / [b]oth, then write to the file (current content saved as a version first), edit in your editor, save progress, or discard. Offers to resume saved progress. Tracked files only; not binary, at most 2 MiB. |
+| `undo merge VERSION [PATH] [--all disk\|version] [-y]` | Resolve a restore like a merge conflict (details below). |
 | `undo merge-drafts [--discard PATH]` | List unfinished merges (resume with `undo merge VERSION`), or delete one. |
-| `undo diff-file VERSION [PATH] [-u]` | Compare a stored version with the file on disk (default: the file's current location), side by side: left is the file now, right the version, i.e. what restoring it would change. Only files inside tracked folders. |
-| `undo diff A B [-u]` | Side-by-side diff of two text versions: old on the left, new on the right, changed characters highlighted, `+added -removed` summary. `-u` (or a terminal under 100 columns) prints a unified diff. Line-ending changes (CRLF/LF) are ignored and reported in the summary. |
+| `undo diff-file VERSION [PATH] [-u]` | Compare a version with the file on disk. |
+| `undo diff A B [-u]` | Compare two versions side by side. |
 | `undo cat VERSION` | Print a text version. |
-| `undo forget PATH [--before TIME] [--dry-run] [-y]` | Remove the history of one file or one folder. With `--before` (ISO or relative: `30d`, `2w`) only older versions go and each file's latest version is kept. Shows a preview and asks first. Snapshot versions are kept. Files that still exist start a new history. |
+| `undo forget PATH [--before TIME] [--dry-run] [-y]` | Remove a file's or folder's history (details below). |
 | `undo delete-versions ID... [-y]` | Delete individual versions. Refuses a file's latest version (use `forget`) and versions in a snapshot. |
+
+**Details:**
+
+* `undo files --sort` (`-s`): `path` (default), `modified`, `size`, `version` (latest change),
+  `versions` (number of versions). `-r` reverses, `-d` includes deleted files.
+* `undo diff` and `undo diff-file`:
+  * side by side, changed characters highlighted, with a `+added -removed` summary;
+  * `-u`, or a terminal under 100 columns, prints a unified diff;
+  * line-ending changes (CRLF/LF) are ignored and reported in the summary.
+* `undo diff-file`: left is the file now, right the version, i.e. what restoring it would change.
+  Default path: the file's current location. Only files inside tracked folders.
+* `undo merge`:
+  * for each difference: `d` keep disk, `v` use version, `b` both (`--all disk|version` answers
+    all at once);
+  * then: write to the file (its current content is saved as a version first), show the result,
+    edit it in your editor, save progress, or discard;
+  * offers to resume saved progress;
+  * tracked files only; not binary; at most 2 MiB.
+* `undo forget`:
+  * `--before` (ISO, or relative such as `30d`, `2w`) removes only older versions and keeps each
+    file's latest version;
+  * shows a preview and asks first; snapshot versions are kept;
+  * files that still exist start a new history.
 
 ## Restoration
 
@@ -97,11 +139,21 @@ Every `undo` command, option and setting. For step-by-step recipes see
 |---|---|
 | `undo snapshot create --name NAME [--root R] [-d TEXT] [--no-scan]` | Scan the root, then record every file's current version. |
 | `undo snapshot list [--root R] [-s KEY] [-r]` | List snapshots, newest first. `--sort` by `created`, `name`, `root`, `files` or `size`. |
-| `undo snapshot show ID\|NAME` | Files in the snapshot. Names match ignoring case, spaces, `-` and `_` (`try1` finds "try 1"); quote names with spaces, or use the id. |
+| `undo snapshot show ID\|NAME` | Files in the snapshot. |
 | `undo snapshot diff A B` | Added / removed / modified between two snapshots. |
 | `undo snapshot restore ID\|NAME [--to DIR] [--path SUBDIR] [--overwrite] [--dry-run]` | Restore. |
 | `undo snapshot rename ID\|NAME [NEW_NAME] [-d TEXT]` | Rename a snapshot and/or change its description (`-d ""` clears it). Names are unique per folder. |
 | `undo snapshot delete ID\|NAME [-y]` | Delete (versions remain). |
+
+**Snapshot names:**
+
+* Matched ignoring case, spaces, `-` and `_`, so `try1` finds "try 1".
+* Quote names with spaces, or use the id:
+
+```sh
+undo snapshot show "try 1"
+undo snapshot show 1
+```
 
 ## Storage
 
@@ -122,9 +174,13 @@ Every `undo` command, option and setting. For step-by-step recipes see
 
 ## Settings
 
-Settings are stored in `config.json` in the data directory (`undo config --path` prints it). Every
-setting below can also be changed on the app's **Settings** page; exclusion patterns are on its
-**Exclusions** card.
+* Settings are stored in `config.json` in the data directory.
+* Every setting below can also be changed on the app's **Settings** page; exclusion patterns are
+  on its **Exclusions** card.
+
+```sh
+undo config --path        # where config.json is
+```
 
 `undo settings show [SECTION|KEY]` and `undo settings set KEY VALUE`. Sizes accept units
 (`500MB`, `2GiB`), lists accept JSON or comma-separated values, `none` clears optional values.
@@ -147,8 +203,8 @@ setting below can also be changed on the app's **Settings** page; exclusion patt
 | `retention.max_storage_bytes` | none | storage quota, e.g. `50GB` |
 | `retention.interval_seconds` | 86400 | how often retention runs (first run 10 min after the daemon starts) |
 | `compression.min_size` / `skip_extensions` | 64 B / archives, images, video … | stored uncompressed |
-| `exclusions.defaults` | VCS dirs, tool caches, temp/swap files; Python wheels, eggs, `site-packages/`, `venv/`, `*.pyc`; Node `node_modules/`, `.npm/`, `.pnpm-store/`, `.yarn/`; Rust `target/`, `.cargo/`, `.rustup/`, `*.crate`; log files `*.log` | `undo exclude list` shows them all; `undo exclude remove PATTERN` drops one (e.g. `target/` if you keep your own folder named *target*) |
-| `exclusions.defaults_version` | 3 | which release of the default list yours is up to date with; new defaults are added once on upgrade, removed ones never come back |
+| `exclusions.defaults` | see below | default exclusion patterns |
+| `exclusions.defaults_version` | 3 | internal: version of the default list (see below) |
 | `api.host` / `api.port` | 127.0.0.1 / 47821 | loopback only unless `api.allow_remote` |
 | `daemon.autostart` | true | GUI/TUI start the daemon when needed |
 | `daemon.gc_interval_seconds` / `gc_grace_seconds` | 86400 / 3600 | |
@@ -156,20 +212,71 @@ setting below can also be changed on the app's **Settings** page; exclusion patt
 | `daemon.log_level` | INFO | |
 | `ui.theme` | system | GUI theme |
 
+**Default exclusions** (`exclusions.defaults`):
+
+* Version control and tool caches: `.git/`, `.svn/`, `__pycache__/`, `.mypy_cache/`, …
+* Temporary and log files: `*.tmp`, `*.swp`, `~$*`, `*.log`, …
+* Python: `*.whl`, `*.egg-info/`, `site-packages/`, `venv/`, `.venv/`, `*.pyc`
+* Node: `node_modules/`, `.npm/`, `.pnpm-store/`, `.yarn/`
+* Rust: `target/`, `.cargo/`, `.rustup/`, `*.crate`
+
+```sh
+undo exclude list                   # all of them, with their source
+undo exclude remove "target/"       # e.g. if your own folder is called target
+```
+
+`exclusions.defaults_version` records which version of this list yours matches. New defaults
+are added once on upgrade; a default you removed never comes back.
+
 ## Terminal UI
 
 `undo tui` opens a full-screen dashboard; it works over SSH.
 
-| Where | Keys |
-|---|---|
-| Everywhere | `1`–`7` switch tabs (Dashboard, Roots, Files, History, Snapshots, Storage, Settings) · `u` unfinished merges (Enter resume, `x` discard) · `F5` / `Ctrl+R` refresh · `q` quit |
-| Roots | `a` add · `s` scan · `e` enable/disable · `x` untrack (history kept) · `f` delete history of the folder or a subfolder (all, or older than e.g. `30d`) |
-| Files | type to search · tick *Include deleted* · `Enter` opens the file's history |
-| File history | `v` view content · `d` compare with previous (side by side) · `i` details · `r` restore · `x` delete this version (not the latest) · `f` delete the file's history (all, or older than e.g. `30d`) · `c` compare with the file on disk · `m` merge into the file · `Esc` back |
-| Snapshots | `c` create · `d` compare · `r` restore · `n` rename · `x` delete |
-| Restore preview | `c` compare the selected file with the disk · `m` resolve it (merge editor) · `t` cycle the filter (all, conflict, error, overwrite, create, identical); conflicts and errors are listed first |
-| Merge editor | `n` / `p` next / previous difference · `1` keep disk · `2` use version · `3` both · `a` / `v` all disk / all version · `e` edit the result (`Esc` back) · `Ctrl+S` save to file · `Ctrl+D` save progress · `q` close (asks about unsaved changes) |
-| Storage | buttons: Verify · GC preview · Run GC · Retention preview · Apply retention (removes old versions now, then frees the space) |
+**Everywhere**
+
+* `1`–`7` switch tabs: Dashboard, Roots, Files, History, Snapshots, Storage, Settings
+* `u` unfinished merges (Enter resume, `x` discard)
+* `F5` / `Ctrl+R` refresh · `q` quit
+
+**Roots**
+
+* `a` add · `s` scan · `e` enable/disable
+* `x` untrack (history kept)
+* `f` delete history of the folder or a subfolder (all, or older than e.g. `30d`)
+
+**Files**
+
+* type to search · tick *Include deleted* · `Enter` opens the file's history
+
+**File history**
+
+* `v` view content · `i` details · `r` restore
+* `d` compare with the previous version · `c` compare with the file on disk
+* `m` merge into the file
+* `x` delete this version (not the latest) · `f` delete the file's history
+* `Esc` back
+
+**Snapshots**
+
+* `c` create · `d` compare · `r` restore · `n` rename · `x` delete
+
+**Restore preview**
+
+* `c` compare the selected file with the disk
+* `m` resolve it in the merge editor
+* `t` cycle the filter (all, conflict, error, overwrite, create, identical)
+* conflicts and errors are listed first
+
+**Merge editor**
+
+* `n` / `p` next / previous difference
+* `1` keep disk · `2` use version · `3` both · `a` / `v` all disk / all version
+* `e` edit the result (`Esc` back)
+* `Ctrl+S` save to file · `Ctrl+D` save progress · `q` close (asks about unsaved changes)
+
+**Storage**
+
+* buttons: Verify · GC preview · Run GC · Retention preview · Apply retention
 
 Restores always show a **Preview** first, and replacing existing files needs the *Overwrite* tick.
 

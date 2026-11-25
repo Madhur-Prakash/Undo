@@ -51,7 +51,7 @@ Do **not** track:
 
 | Folder | Why |
 |---|---|
-| Your whole home folder (`~`, `C:\Users\you`) | It holds caches, browser profiles and app data that change constantly. They would fill Undo's storage, and a home folder can have hundreds of thousands of files. |
+| Your whole home folder (`~`, `C:\Users\you`) | Caches and app data change constantly and would fill storage |
 | System folders (`C:\Windows`, `/usr`, `/var`) | Constantly changing, many files are locked, and not your work |
 | Undo's data directory or program folder | Refused: Undo would record itself |
 
@@ -86,18 +86,22 @@ Later scans only look at files whose size or modification time changed, so they 
 
 ### 1. Install
 
-Download `Undo-Setup-<version>.exe` from the
-**[latest release](https://github.com/Madhur-Prakash/Undo/releases/latest)** (always the newest
-version; older ones are on the [Releases page](https://github.com/Madhur-Prakash/Undo/releases)).
+* Download `Undo-Setup-<version>.exe` from the
+  **[latest release](https://github.com/Madhur-Prakash/Undo/releases/latest)**.
+* Older versions are on the [Releases page](https://github.com/Madhur-Prakash/Undo/releases).
 
 Run it. It installs for your account only, needs no administrator rights,
 and installs into `%LOCALAPPDATA%\Programs\Undo`. Keep the first two options ticked:
 
 | Option | Default | What it does |
 |---|---|---|
-| Start the Undo daemon when I sign in | on | Runs `undo service install`. It adds the value `Undo` to your per-user Run key, so the daemon starts at every sign-in and records changes even when the app is closed. You can switch it off under *Settings > Apps > Startup*. |
-| Add the undo command to PATH | on | Adds `%LOCALAPPDATA%\Programs\Undo\backend` to your user `PATH`, so `undo` and `undo tui` work in any **new** terminal |
+| Start the Undo daemon when I sign in | on | Records changes even when the app is closed |
+| Add the undo command to PATH | on | `undo` and `undo tui` work in any **new** terminal |
 | Create a desktop shortcut | off | A desktop icon for the app |
+
+* *Start at sign-in* runs `undo service install`: the value `Undo` in your per-user Run key. Switch
+  it off under *Settings > Apps > Startup*.
+* *Add to PATH* adds `%LOCALAPPDATA%\Programs\Undo\backend` to your user `PATH`.
 
 Setup also creates the data directory (`undo init`), starts the daemon, and offers to open the
 app.

@@ -34,15 +34,26 @@ that keep data safe under concurrency.
 |---|---|
 | `config/` | Pydantic `Settings` persisted to `config.json` (atomic writes, validation, live reload); defaults; API token |
 | `database/` | SQLAlchemy models, WAL engine with `BEGIN IMMEDIATE` writers, ordered migrations, query repositories |
-| `storage/` | Content addressing, compression policy, `BlobStore` (ingest, verify, read, pins), chunk dedup accounting, integrity verification, garbage collection |
-| `versioning/` | `CaptureEngine` (safe capture), `version_manager` (create/modify/delete/move bookkeeping), history queries, snapshots, retention, diff |
-| `filesystem/` | Exclusions, scanner, `Reconciler`, `EventProcessor`, `WatcherManager`, platform adapters (`linux.py` inotify limits, `windows.py` ReadDirectoryChangesW + USN probe) |
-| `recovery/` | Restore safety primitives, file/tree restore engine, point-in-time and snapshot entry resolution, deleted-file listing |
+| `storage/` | `BlobStore`, compression, deduplication, verification, garbage collection |
+| `versioning/` | Capture, version bookkeeping, history, snapshots, retention, diff, forget |
+| `filesystem/` | Exclusions, scanner, reconciler, event processor, watchers |
+| `recovery/` | Safe restore, folder and snapshot restore, deleted files, merge |
 | `daemon/` | Process lock, health counters, scheduler, startup recovery and discovery (`lifecycle.py`), `DaemonManager` |
 | `api/` | FastAPI app factory, auth dependency, request schemas, routes |
-| `platform/` | Paths and the data-directory layout, permissions, autostart integration (systemd units; the per-user Run key on Windows) |
+| `platform/` | Paths, permissions, autostart (systemd; Windows Run key) |
 | `service.py` | `UndoService`: the only API the outside world uses; returns models from `domain.py` |
 | `context.py` | Composition root wiring one data directory's components |
+
+Inside the packages:
+
+* `storage/`: `BlobStore` ingests, verifies and reads content and pins it during restores; chunk
+  deduplication accounting.
+* `versioning/`: `CaptureEngine` (safe capture), `version_manager` (create, modify, delete and
+  move bookkeeping), `forget` (removing history on purpose).
+* `filesystem/`: `Reconciler`, `EventProcessor`, `WatcherManager`; platform adapters `linux.py`
+  (inotify limits) and `windows.py` (ReadDirectoryChangesW, USN probe).
+* `recovery/`: restore safety primitives, file and tree restore, point-in-time and snapshot
+  resolution, deleted files, `merge` (resolve a restore like a merge conflict).
 
 ## Communication
 
@@ -123,10 +134,22 @@ It runs:
 
 ## Packaging
 
-| Platform | How the parts ship |
-|---|---|
-| Windows | `gui/installer/Undo.iss` (Inno Setup 7) bundles the Flutter release build (`Undo.exe`) with a PyInstaller build of the backend from `Undo.spec`. That build has `undo.exe` (console: CLI + TUI) and `undo-daemon.exe` (windowless), sharing one `_internal/`. In a frozen build, `daemon_command()` points at `undo-daemon.exe` next to `undo.exe`, both for `undo start` and for autostart. Autostart is the per-user Run key value `Undo`. |
-| Linux | `uv tool install ./cli --with ./backend`, or the release archive from `scripts/build.py` (wheels + `installer/install.sh`). Autostart is a systemd user unit (or a system unit through `services/linux/install_service.sh --system`). |
+**Windows** (`gui/installer/Undo.iss`, Inno Setup 7):
+
+* Bundles the Flutter release build (`Undo.exe`) with a PyInstaller build of the backend
+  (`Undo.spec`).
+* The backend build has `undo.exe` (console: CLI + TUI) and `undo-daemon.exe` (windowless),
+  sharing one `_internal/`.
+* In a frozen build, `daemon_command()` points at `undo-daemon.exe`, for `undo start` and for
+  autostart.
+* Autostart is the per-user Run key value `Undo`.
+
+**Linux:**
+
+* `uv tool install ./cli --with ./backend`, or the release archive from `scripts/build.py`
+  (wheels + `installer/install.sh`).
+* Autostart is a systemd user unit, or a system unit through
+  `services/linux/install_service.sh --system`.
 
 Installed builds refuse to track Undo's own data directory and program folder.
 ---

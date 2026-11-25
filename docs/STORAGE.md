@@ -91,9 +91,9 @@ The public API is identical for both kinds: callers only see blob hashes.
 | Table | Purpose |
 |---|---|
 | `roots` | tracked folders (`absolute_path`, `platform`, `enabled`, `last_scan_at`, `configuration`) |
-| `files` | one row per tracked file identity; `relative_path`, `path_key` (case-folded on Windows), `filesystem_identity`, `deleted_at`, last size/mtime, `latest_version_id` |
+| `files` | one row per tracked file: path, identity, deleted flag, latest version |
 | `path_history` | every path a file has had (search by former names) |
-| `versions` | `operation` (CREATE/MODIFY/DELETE/RENAME/MOVE), `blob_hash`, `file_size`, `timestamp`, `parent_version_id`, `snapshot_id`, `relative_path`, `metadata` (mtime, mode, uid/gid, attributes, `from_path`) |
+| `versions` | every version: operation, content hash, size, time, previous version |
 | `blobs` | `hash`, sizes, compression, `storage_kind`, `storage_path`, `status` (ok/missing/corrupt), `verified_at` |
 | `chunks`, `blob_chunks` | chunk objects and per-blob manifests |
 | `snapshots`, `snapshot_entries` | named snapshots and the version of every file they captured |
