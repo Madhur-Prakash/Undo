@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from pathlib import Path
 
+import click
 import typer
 from rich.syntax import Syntax
 from rich.table import Table
@@ -286,6 +287,190 @@ def register(app: typer.Typer) -> None:
         Line-ending changes (CRLF/LF) are ignored and reported in the summary.
         """
         d = call(ctx, "diff_versions", a=version_a, b=version_b)
+        if json_out:
+            render.print_json(d)
+            return
+        if d.get("hunks") and not unified and render.console.width >= 100:
+            render.console.print(render.side_by_side_diff(d))
+        elif d.get("diff"):
+            render.console.print(Syntax(d["diff"], "diff", theme="ansi_dark", word_wrap=True))
+        render.console.print(render.diff_summary(d))
+
+    @app.command()
+    def merge(
+        ctx: typer.Context,
+        version_id: int = typer.Argument(..., help="Stored version id (from `undo versions PATH`)"),
+        path: str | None = typer.Argument(
+            None, help="File to merge into (default: the version's file at its current location)"
+        ),
+        all_choice: str | None = typer.Option(
+            None, "--all", help="Answer every difference: disk or version (no questions)"
+        ),
+        yes: bool = typer.Option(False, "--yes", "-y", help="With --all: write without asking"),
+    ) -> None:
+        """Resolve a restore like a merge conflict, interactively (same rules as the app and TUI).
+
+        For each difference between the file on disk (left) and the version (right) choose
+        [d]isk, [v]ersion or [b]oth. Then write the result to the file (its current content is
+        saved as a version first), edit it in your editor, save progress to resume later, or
+        discard. Only files inside tracked folders.
+        """
+        from undo_core.recovery.merge import compose_result
+
+        if all_choice not in (None, "disk", "version"):
+            raise typer.BadParameter("--all must be disk or version")
+        src = call(ctx, "merge_source", version_id=version_id, path=_abs(path) if path else None)
+        if src["identical"]:
+            render.console.print(
+                "[green]Identical:[/green] the file already has this version's content."
+            )
+            return
+        hunks = src["hunks"]
+        choices: dict[int, str] = {i: "disk" for i in range(len(hunks))}
+        text: str | None = None
+        edited = False
+        draft = src.get("draft")
+        if draft and draft.get("version_id") == version_id and all_choice is None:
+            if typer.confirm(
+                f"Resume the unfinished merge saved {render.when(draft.get('updated_at'))}?",
+                default=True,
+            ):
+                for key, value in (draft.get("choices") or {}).items():
+                    if str(key).isdigit() and value in ("disk", "version", "both"):
+                        choices[int(key)] = value
+                text, edited = draft["text"], bool(draft.get("edited"))
+
+        render.console.print(
+            f"[bold]Resolve {src['path']}[/bold]: left = on disk now, right = version {version_id}"
+        )
+        if all_choice is not None:
+            choices = {i: all_choice for i in range(len(hunks))}
+        elif text is None:
+            answers = {"d": "disk", "v": "version", "b": "both"}
+            for i, hunk in enumerate(hunks):
+                view = {**src, "hunks": [hunk]}
+                render.console.print(f"\n[bold]Difference {i + 1} of {len(hunks)}[/bold]")
+                render.console.print(render.side_by_side_diff(view))
+                answer = (
+                    typer.prompt("[d]isk / [v]ersion / [b]oth / [q] stop choosing", default="d")
+                    .strip()
+                    .lower()[:1]
+                )
+                if answer == "q":
+                    break
+                choices[i] = answers.get(answer, "disk")
+        if text is None:
+            text = compose_result(src["current_lines"], hunks, choices)
+
+        def write_file() -> bool:
+            call(
+                ctx,
+                "merge_write",
+                path=src["path"],
+                text=text,
+                version_id=version_id,
+                expected_hash=src["current_hash"],
+            )
+            render.success(
+                f"Merged result saved to {src['path']} (its previous content is a version)"
+            )
+            return True
+
+        if all_choice is not None and yes:
+            write_file()
+            return
+        while True:
+            summary = ", ".join(f"{i + 1}: {choices[i]}" for i in sorted(choices))
+            render.console.print(
+                f"\n[bold]Result[/bold] ({len(text.splitlines())} lines{', edited by hand' if edited else ''}) · {summary}"
+            )
+            action = (
+                typer.prompt(
+                    "[w]rite to file / [s]how result / [e]dit in editor / [p] save progress / [x] discard",
+                    default="w",
+                )
+                .strip()
+                .lower()[:1]
+            )
+            if action == "w":
+                if typer.confirm(f"Write the merged result to {src['path']}?", default=True):
+                    write_file()
+                    return
+            elif action == "s":
+                render.console.print(Syntax(text, "text", line_numbers=True, word_wrap=True))
+            elif action == "e":
+                changed = click.edit(text)
+                if changed is not None and changed.rstrip("\n") != text:
+                    text, edited = changed.rstrip("\n"), True
+            elif action == "p":
+                call(
+                    ctx,
+                    "save_merge_draft",
+                    path=src["path"],
+                    version_id=version_id,
+                    text=text,
+                    choices={str(k): v for k, v in choices.items()},
+                    edited=edited,
+                )
+                render.success(f"Progress saved. Resume with: undo merge {version_id}")
+                return
+            elif action == "x":
+                if typer.confirm("Discard this merge? The file is not touched.", default=False):
+                    return
+
+    @app.command("merge-drafts")
+    def merge_drafts(
+        ctx: typer.Context,
+        discard: str | None = typer.Option(
+            None, "--discard", help="Delete the saved progress of this file"
+        ),
+        json_out: bool = typer.Option(False, "--json"),
+    ) -> None:
+        """List unfinished merges saved with "save progress" (resume with `undo merge VERSION`)."""
+        if discard:
+            call(ctx, "delete_merge_draft", path=_abs(discard))
+            render.success(f"Discarded the unfinished merge of {_abs(discard)}")
+            return
+        drafts = call(ctx, "list_merge_drafts")
+        if json_out:
+            render.print_json(drafts)
+            return
+        if not drafts:
+            render.console.print("No unfinished merges.")
+            return
+        t = Table(title="Unfinished merges")
+        for col in ("File", "Version", "Saved", "Resume with"):
+            t.add_column(col)
+        for d in drafts:
+            t.add_row(
+                d["path"],
+                str(d["version_id"]),
+                render.when(d.get("updated_at")),
+                f"undo merge {d['version_id']}",
+            )
+        render.console.print(t)
+
+    @app.command("diff-file")
+    def diff_file(
+        ctx: typer.Context,
+        version_id: int = typer.Argument(..., help="Stored version id (from `undo versions PATH`)"),
+        path: str | None = typer.Argument(
+            None, help="File on disk to compare with (default: the file's current location)"
+        ),
+        unified: bool = typer.Option(False, "--unified", "-u", help="Unified diff instead"),
+        json_out: bool = typer.Option(False, "--json"),
+    ) -> None:
+        """Compare a stored version with the file on disk: what restoring it would change.
+
+        Left is the file now, right is the version. Only files inside tracked folders can be
+        compared.
+        """
+        d = call(
+            ctx,
+            "diff_version_with_file",
+            version_id=version_id,
+            path=_abs(path) if path else None,
+        )
         if json_out:
             render.print_json(d)
             return

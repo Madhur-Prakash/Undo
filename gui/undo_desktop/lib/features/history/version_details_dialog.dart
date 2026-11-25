@@ -1,5 +1,4 @@
 // Version details: timestamp, size, hash, compression; restore, compare and preview actions.
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +8,7 @@ import '../../core/models/models.dart';
 import '../../core/providers/providers.dart';
 import '../../core/util/format.dart';
 import '../../shared/widgets.dart';
+import '../restore/merge_editor.dart';
 import '../restore/restore_dialog.dart';
 import 'diff_view.dart';
 
@@ -156,45 +156,13 @@ class _DetailBody extends StatelessWidget {
   }
 }
 
-Future<void> showDiff(BuildContext context, WidgetRef ref, int a, int b) async {
-  final api = ref.read(apiProvider);
-  final size = MediaQuery.sizeOf(context);
-  await showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text('Compare v$a → v$b'),
-      content: SizedBox(
-        width: math.min(1500, size.width * 0.9),
-        height: math.min(900, size.height * 0.78),
-        child: FutureBuilder<VersionDiff>(
-          future: api.diff(a, b),
-          builder: (ctx, snap) {
-            if (snap.hasError) return ErrorView(message: snap.error.toString());
-            if (!snap.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final d = snap.data!;
-            if (d.hunks.isEmpty) {
-              return EmptyState(
-                icon: Icons.compare_arrows,
-                title: d.note ?? 'No textual differences',
-                message:
-                    'Size change: ${d.sizeDelta >= 0 ? '+' : ''}${d.sizeDelta} bytes',
-              );
-            }
-            return DiffView(diff: d);
-          },
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('Close'),
-        ),
-      ],
-    ),
-  );
-}
+/// Compare two versions side by side. "Edit and merge" merges version [b] into the file on disk.
+Future<void> showDiff(BuildContext context, WidgetRef ref, int a, int b) => showDiffDialog(
+      context,
+      title: 'Compare v$a → v$b',
+      future: ref.read(apiProvider).diff(a, b),
+      onEdit: () => showMergeEditor(context, versionId: b),
+    );
 
 Future<void> showPreview(
   BuildContext context,

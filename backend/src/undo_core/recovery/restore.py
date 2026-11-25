@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -111,6 +112,8 @@ class RestoreEngine:
         self.db = db
         self.store = store
         self.capture = capture
+        # Called with the destinations a (non dry-run) restore wrote; used to clear merge drafts.
+        self.after_write: Callable[[list[str]], object] | None = None
 
     def _preserve_existing(self, dest: Path) -> tuple[bool, int | None, str | None]:
         """Capture the content about to be overwritten so the overwrite is itself undoable."""
@@ -198,6 +201,14 @@ class RestoreEngine:
                 result.errors += 1
         result.metadata_restored = sorted(restored_meta)
         result.metadata_not_restored = sorted(not_restored)
+        if not dry_run and self.after_write is not None:
+            written = [
+                i.destination
+                for i in result.items
+                if i.action in (RestoreAction.CREATE.value, RestoreAction.OVERWRITE.value)
+            ]
+            if written:
+                self.after_write(written)
         return result
 
     def restore_file(

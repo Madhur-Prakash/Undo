@@ -8,7 +8,9 @@ import '../../core/providers/providers.dart';
 import '../../core/util/format.dart';
 import '../../shared/widgets.dart';
 import '../history/forget_dialog.dart';
+import '../history/diff_view.dart';
 import '../history/version_details_dialog.dart';
+import '../restore/merge_editor.dart';
 import '../restore/restore_dialog.dart';
 
 class FileHistoryPage extends ConsumerWidget {
@@ -99,6 +101,21 @@ class FileHistoryPage extends ConsumerWidget {
               ].join(' · ')),
               onTap: () => showVersionDetails(context, v.id),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (v.hasContent && !f.isDeleted)
+                  IconButton(
+                    tooltip: 'Compare with the file on disk (and merge)',
+                    icon: const Icon(Icons.difference_outlined),
+                    onPressed: () => showDiffDialog(
+                      context,
+                      title: 'Disk vs version ${v.id}: ${f.name}',
+                      future: api.diffWithFile(v.id),
+                      onEdit: () async {
+                        if (await showMergeEditor(context, versionId: v.id)) {
+                          ref.invalidate(fileHistoryProvider(fileId));
+                        }
+                      },
+                    ),
+                  ),
                 if (v.hasContent && older != null)
                   IconButton(
                     tooltip: 'Compare with version ${older.id}',

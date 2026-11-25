@@ -3,7 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from undo_core.api.dependencies import get_service
-from undo_core.api.schemas import CreateSnapshotRequest, SnapshotRestoreRequest
+from undo_core.api.schemas import (
+    CreateSnapshotRequest,
+    RenameSnapshotRequest,
+    SnapshotRestoreRequest,
+)
 from undo_core.domain import RestoreResult, SnapshotDetail, SnapshotDiff, SnapshotInfo
 from undo_core.service import UndoService
 
@@ -47,6 +51,14 @@ def restore_snapshot(
         overwrite=body.overwrite,
         dry_run=body.dry_run,
     )
+
+
+@router.patch("/snapshots/{ref}", response_model=SnapshotInfo)
+def rename_snapshot(
+    ref: str, body: RenameSnapshotRequest, service: UndoService = Depends(get_service)
+) -> SnapshotInfo:
+    """Rename a snapshot and/or change its description."""
+    return service.rename_snapshot(ref, name=body.name, description=body.description)
 
 
 @router.delete("/snapshots/{ref}", response_model=SnapshotInfo)

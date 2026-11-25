@@ -334,20 +334,33 @@ def _diff_no(n: int | None, kind: str, side: str) -> Text:
     return Text(str(n), style=style)
 
 
+def diff_titles(d: dict[str, Any]) -> tuple[str, str]:
+    """Column titles: two versions, or (for a version compared with a file) disk vs version."""
+    if "version" in d:  # FileDiff: left = the file now, right = the stored version
+        v = d["version"]
+        left = f"now on disk  {d['path']}" if d.get("exists") else f"not on disk  {d['path']}"
+        return left, f"v{v['id']}  {v['relative_path']}  ({when(v['timestamp'])})"
+    a, b = d["a"], d["b"]
+    return (
+        f"v{a['id']}  {a['relative_path']}  ({when(a['timestamp'])})",
+        f"v{b['id']}  {b['relative_path']}  ({when(b['timestamp'])})",
+    )
+
+
 def side_by_side_diff(d: dict[str, Any]) -> Table:
     """The comparison as two columns, old on the left and new on the right (like an editor)."""
-    a, b = d["a"], d["b"]
+    left, right = diff_titles(d)
     t = Table(box=box.SIMPLE_HEAD, expand=True, show_edge=False, pad_edge=False, padding=(0, 1))
     t.add_column("", justify="right", style="dim", no_wrap=True, width=5)
     t.add_column(
-        f"v{a['id']}  {a['relative_path']}  ({when(a['timestamp'])})",
+        left,
         ratio=1,
         overflow="fold",
         header_style="bold red",
     )
     t.add_column("", justify="right", style="dim", no_wrap=True, width=5)
     t.add_column(
-        f"v{b['id']}  {b['relative_path']}  ({when(b['timestamp'])})",
+        right,
         ratio=1,
         overflow="fold",
         header_style="bold green",

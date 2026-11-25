@@ -46,12 +46,16 @@ from undo_core.domain import (
     DiffRow,
     DoctorCheck,
     ExclusionInfo,
+    FileDiff,
     FileHistory,
     FileInfo,
     FilePage,
     ForgetResult,
     GCReport,
     HealthInfo,
+    MergeDraft,
+    MergeSource,
+    MergeWriteResult,
     ReconcileReport,
     RestoreResult,
     RetentionReport,
@@ -77,6 +81,7 @@ from undo_core.platform.paths import (
     to_relative,
     validate_relative,
 )
+from undo_core.recovery import merge as merging
 from undo_core.recovery.deleted_files import list_deleted
 from undo_core.recovery.directory_restore import entries_at, entries_from_snapshot
 from undo_core.recovery.restore import RestoreEntry
@@ -88,6 +93,7 @@ from undo_core.utils.errors import (
     ConflictError,
     InvalidInputError,
     NotFoundError,
+    PathOutsideRootError,
 )
 from undo_core.utils.logging import get_logger
 from undo_core.utils.timeutil import parse_timestamp, to_aware, to_db, utcnow
@@ -485,6 +491,204 @@ class UndoService:
             note=note,
         )
 
+    def diff_version_with_file(self, version_id: int, path: str | None = None) -> FileDiff:
+        """Compare a stored version with a file on disk (default: the file's current location).
+
+        Left is the file now, right is the version: what a restore would change. Only files
+        inside a tracked folder can be read, so the API cannot be used to read arbitrary files.
+        A missing file compares as empty (a restore would create it).
+        """
+        detail = self.get_version(version_id)
+        if detail.blob is None:
+            raise InvalidInputError(f"Version {version_id} records a deletion; it has no content")
+        target = Path(path) if path else Path(detail.version.absolute_path)
+        with self.db.read() as s:
+            if find_root_for_path(s, target) is None:
+                raise PathOutsideRootError(
+                    f"{target} is not inside a tracked folder; only tracked files can be compared"
+                )
+        exists = target.is_file()
+        current_size = target.stat().st_size if exists else 0
+        base: dict[str, Any] = {
+            "version": detail.version,
+            "path": str(target),
+            "exists": exists,
+            "size_delta": detail.blob.original_size - current_size,
+        }
+        if not detail.is_text:
+            return FileDiff(
+                **base, identical=False, is_text=False, note="binary content; no text diff"
+            )
+        if detail.blob.original_size > MAX_DIFF_BYTES or current_size > MAX_DIFF_BYTES:
+            return FileDiff(
+                **base, identical=False, is_text=True, note="files too large for an inline diff"
+            )
+        stored = self.ctx.store.read_bytes(detail.blob.hash)  # verified against its hash
+        current = target.read_bytes() if exists else b""
+        if exists and not is_probably_text(current[:TEXT_SAMPLE]):
+            return FileDiff(
+                **base,
+                identical=False,
+                is_text=False,
+                note="the file on disk is binary; no text diff",
+            )
+        if exists and current == stored:
+            return FileDiff(**base, identical=True, is_text=True, note="contents are identical")
+        text, truncated = unified_diff(
+            current, stored, f"{target.name} (now on disk)", f"{target.name}@v{version_id}"
+        )
+        sbs = side_by_side(current, stored)
+        hunks = [
+            DiffHunk(
+                a_start=h.a_start,
+                a_count=h.a_count,
+                b_start=h.b_start,
+                b_count=h.b_count,
+                rows=[DiffRow(**vars(r)) for r in h.rows],
+            )
+            for h in sbs.hunks
+        ]
+        notes = []
+        if not exists:
+            notes.append("the file is not on disk; a restore would create it")
+        endings = line_ending_note(current, stored) if exists else None
+        if endings:
+            notes.append(endings)
+        if exists and not hunks:
+            notes.append("no line changes")
+        return FileDiff(
+            **base,
+            identical=False,
+            is_text=True,
+            diff=text,
+            hunks=hunks,
+            added=sbs.added,
+            removed=sbs.removed,
+            truncated=truncated or sbs.truncated,
+            note="; ".join(notes) or None,
+        )
+
+    # ================================================================== merge (resolve a restore)
+    def _tracked_target(self, path: Path) -> RootRef:
+        with self.db.read() as s:
+            root = find_root_for_path(s, path)
+            if root is None:
+                raise PathOutsideRootError(
+                    f"{path} is not inside a tracked folder; only tracked files can be merged"
+                )
+            return root_ref(root)
+
+    def merge_source(self, version_id: int, path: str | None = None) -> MergeSource:
+        """Both texts for a merge editor: the file on disk now and the stored version."""
+        detail = self.get_version(version_id)
+        if detail.blob is None:
+            raise InvalidInputError(f"Version {version_id} records a deletion; it has no content")
+        target = Path(path) if path else Path(detail.version.absolute_path)
+        self._tracked_target(target)
+        exists = target.is_file()
+        current_size = target.stat().st_size if exists else 0
+        if detail.blob.original_size > MAX_DIFF_BYTES or current_size > MAX_DIFF_BYTES:
+            raise InvalidInputError(
+                "The file is too large to merge here; restore it to another folder"
+            )
+        if not detail.is_text:
+            raise InvalidInputError(
+                "Binary files cannot be merged; restore the version or keep the file"
+            )
+        stored = self.ctx.store.read_bytes(detail.blob.hash)
+        current = target.read_bytes() if exists else b""
+        if exists and not is_probably_text(current[:TEXT_SAMPLE]):
+            raise InvalidInputError("The file on disk is binary and cannot be merged")
+        current_lines, version_lines = merging.line_pair(current, stored)
+        sbs = side_by_side(current, stored)
+        hunks = [
+            DiffHunk(
+                a_start=h.a_start,
+                a_count=h.a_count,
+                b_start=h.b_start,
+                b_count=h.b_count,
+                rows=[DiffRow(**vars(r)) for r in h.rows],
+            )
+            for h in sbs.hunks
+        ]
+        raw_draft = merging.load_draft(self.ctx.paths.data_dir, str(target))
+        draft = MergeDraft.model_validate(raw_draft) if raw_draft else None
+        return MergeSource(
+            version=detail.version,
+            path=str(target),
+            exists=exists,
+            current_lines=current_lines,
+            version_lines=version_lines,
+            current_hash=merging.content_hash(current),
+            line_ending=merging.detect_line_ending(current, stored),
+            hunks=hunks,
+            identical=exists and current == stored,
+            draft=draft,
+        )
+
+    def merge_write(
+        self,
+        *,
+        path: str,
+        text: str,
+        version_id: int,
+        expected_hash: str | None = None,
+    ) -> MergeWriteResult:
+        """Write a merged result to ``path``. The current content is saved as a version first."""
+        target = Path(path)
+        ref = self._tracked_target(target)
+        detail = self.get_version(version_id)
+        stored = self.ctx.store.read_bytes(detail.blob.hash) if detail.blob else b""
+        current = merging.check_unchanged(target, expected_hash)
+        final_newline = (current or stored).endswith(b"\n")
+        data = merging.encode_text(
+            text, merging.detect_line_ending(current, stored), final_newline=final_newline
+        )
+        pre_vid: int | None = None
+        note: str | None = None
+        if target.is_file():
+            ok, pre_vid, note = self.ctx.restore._preserve_existing(target)
+            if not ok:
+                raise ConflictError(note or "could not save the current content first")
+        merging.write_merged(target, data)
+        captured = self.ctx.capture.capture(ref, target, force_hash=True)
+        merging.delete_drafts(self.ctx.paths.data_dir, [str(target)])
+        log.info("merge written", extra={"path": str(target), "bytes": len(data)})
+        return MergeWriteResult(
+            path=str(target),
+            bytes_written=len(data),
+            pre_restore_version_id=pre_vid,
+            version_id=captured.version_id,
+            note=note,
+        )
+
+    def list_merge_drafts(self) -> list[MergeDraft]:
+        return [MergeDraft.model_validate(d) for d in merging.list_drafts(self.ctx.paths.data_dir)]
+
+    def save_merge_draft(
+        self,
+        *,
+        path: str,
+        version_id: int,
+        text: str,
+        choices: dict[str, str] | None = None,
+        edited: bool = False,
+    ) -> MergeDraft:
+        self._tracked_target(Path(path))
+        return MergeDraft.model_validate(
+            merging.save_draft(
+                self.ctx.paths.data_dir,
+                path=path,
+                version_id=version_id,
+                text=text,
+                choices=choices or {},
+                edited=edited,
+            )
+        )
+
+    def delete_merge_draft(self, path: str) -> int:
+        return merging.delete_drafts(self.ctx.paths.data_dir, [path])
+
     def activity(
         self, *, limit: int = 100, root_id: int | None = None, since: str | None = None
     ) -> list[VersionInfo]:
@@ -708,6 +912,18 @@ class UndoService:
             overwrite=overwrite,
             dry_run=dry_run,
         )
+
+    def rename_snapshot(
+        self, ref: int | str, *, name: str | None = None, description: str | None = None
+    ) -> SnapshotInfo:
+        """Rename a snapshot and/or change its description. Its contents are unchanged."""
+        if name is None and description is None:
+            raise InvalidInputError("Give a new name and/or description")
+        with self.db.write() as s:
+            snap = snapshots.find_snapshot(s, str(ref))
+            snapshots.rename_snapshot(s, snap.id, name=name, description=description)
+            root = s.get(Root, snap.root_id)
+            return snapshots.snapshot_info(snap, root.absolute_path if root else "?")
 
     def delete_snapshot(self, ref: int | str) -> SnapshotInfo:
         with self.db.write() as s:

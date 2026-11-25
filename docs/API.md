@@ -50,6 +50,10 @@ random port is used). The actual address is in `<data>/daemon.json`.
 | `GET /versions/{id}` | | `VersionDetail` |
 | `GET /versions/{id}/preview` | `max_bytes` | `VersionContent` |
 | `GET /versions/{id}/content` | | raw bytes (streamed) |
+| `GET /versions/{id}/diff-file?path=` | path optional (default: the file's location) | `FileDiff`: the file on disk vs the version |
+| `GET /versions/{id}/merge-source?path=` | | `MergeSource`: both sides as lines, hunks, `current_hash`, line ending, saved draft |
+| `POST /merge/write` | `{path, text, version_id, expected_hash}` | `MergeWriteResult` (refused if the file changed since `expected_hash`) |
+| `GET /merge/drafts` · `PUT /merge/draft` · `DELETE /merge/draft?path=` | `{path, version_id, text, choices, edited}` | saved merge progress |
 | `GET /versions/diff?a=&b=` | | `VersionDiff`: `hunks` (side-by-side rows with changed-character spans), unified `diff` text, `added`, `removed`, `note` |
 | `POST /history/forget` | `{path, before?, dry_run}` | `ForgetResult` |
 | `POST /versions/delete` | `{version_ids, dry_run}` | `ForgetResult` |
@@ -60,6 +64,7 @@ random port is used). The actual address is in `<data>/daemon.json`.
 | `GET /snapshots/{ref}` | id or name | `SnapshotDetail` |
 | `GET /snapshots/{a}/diff/{b}` | | `SnapshotDiff` |
 | `POST /snapshots/{ref}/restore` | `{destination?, prefix, overwrite, dry_run}` | `RestoreResult` |
+| `PATCH /snapshots/{ref}` | `{name?, description?}` | `SnapshotInfo` (rename; names unique per folder) |
 | `DELETE /snapshots/{ref}` | | `SnapshotInfo` |
 | `GET /storage/stats` | | `StorageStats` |
 | `POST /storage/verify` | `{full, repair}` | `VerifyReport` |

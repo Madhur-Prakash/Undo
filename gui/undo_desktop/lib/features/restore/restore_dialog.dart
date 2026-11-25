@@ -1,6 +1,11 @@
 // Restore confirmation: always preview (dry run) first; overwriting must be ticked explicitly.
-import '../../shared/widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/providers/providers.dart';
+import '../../shared/widgets.dart';
+import '../history/diff_view.dart';
+import 'merge_editor.dart';
 
 import '../../core/models/models.dart';
 import '../../core/util/format.dart';
@@ -20,7 +25,7 @@ Future<RestoreResult?> showRestoreDialog(
   );
 }
 
-class RestoreDialog extends StatefulWidget {
+class RestoreDialog extends ConsumerStatefulWidget {
   const RestoreDialog({super.key, required this.title, required this.source, required this.originalLocation, required this.run});
   final String title;
   final String source;
@@ -28,10 +33,15 @@ class RestoreDialog extends StatefulWidget {
   final RestoreRunner run;
 
   @override
-  State<RestoreDialog> createState() => _RestoreDialogState();
+  ConsumerState<RestoreDialog> createState() => _RestoreDialogState();
 }
 
-class _RestoreDialogState extends State<RestoreDialog> {
+/// Preview order: what needs attention first.
+const _actionOrder = {'conflict': 0, 'error': 1, 'missing_blob': 2, 'overwrite': 3, 'create': 4, 'identical': 5};
+
+class _RestoreDialogState extends ConsumerState<RestoreDialog> {
+  /// Which outcome to list ('all', or one action such as 'conflict').
+  String _filter = 'all';
   final _dest = TextEditingController();
   bool _overwrite = false;
   bool _busy = false;
@@ -56,7 +66,63 @@ class _RestoreDialogState extends State<RestoreDialog> {
   void _invalidate() => setState(() {
         _plan = null;
         _done = null;
+        _filter = 'all';
       });
+
+  /// Items of [r] for the current filter, conflicts and errors first.
+  List<RestoreItem> _visible(RestoreResult r) {
+    final items = [for (final i in r.items) if (_filter == 'all' || i.action == _filter) i];
+    items.sort((x, y) {
+      final byAction = (_actionOrder[x.action] ?? 9).compareTo(_actionOrder[y.action] ?? 9);
+      return byAction != 0 ? byAction : x.destination.compareTo(y.destination);
+    });
+    return items;
+  }
+
+  void _compare(RestoreItem item) {
+    final api = ref.read(apiProvider);
+    showDiffDialog(
+      context,
+      title: 'Disk vs version ${item.versionId}: ${item.relativePath}',
+      future: api.diffWithFile(item.versionId!, path: item.destination),
+      onEdit: item.action == 'identical' ? null : () => _resolve(item),
+    );
+  }
+
+  /// Merge the version into the file, like resolving a merge conflict. Re-previews afterwards.
+  Future<void> _resolve(RestoreItem item) async {
+    final written = await showMergeEditor(context, versionId: item.versionId!, path: item.destination);
+    if (written && mounted && _done == null) await _preview();
+  }
+
+  Widget _filters(RestoreResult r) {
+    final counts = <String, int>{};
+    for (final i in r.items) {
+      counts[i.action] = (counts[i.action] ?? 0) + 1;
+    }
+    const labels = {
+      'conflict': 'Conflicts',
+      'error': 'Errors',
+      'missing_blob': 'Missing data',
+      'overwrite': 'Overwrite',
+      'create': 'Create',
+      'identical': 'Identical',
+    };
+    final keys = counts.keys.toList()..sort((a, b) => (_actionOrder[a] ?? 9).compareTo(_actionOrder[b] ?? 9));
+    return Wrap(spacing: 8, runSpacing: 6, children: [
+      ChoiceChip(
+        label: Text('All (${r.items.length})'),
+        selected: _filter == 'all',
+        onSelected: (_) => setState(() => _filter = 'all'),
+      ),
+      for (final k in keys)
+        ChoiceChip(
+          label: Text('${labels[k] ?? k} (${counts[k]})'),
+          selected: _filter == k,
+          onSelected: (_) => setState(() => _filter = k),
+        ),
+    ]);
+  }
 
   Future<void> _preview() async {
     setState(() {
@@ -104,7 +170,7 @@ class _RestoreDialogState extends State<RestoreDialog> {
     return AlertDialog(
       title: Text(widget.title),
       content: SizedBox(
-        width: 760,
+        width: 820,
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           _row(context, 'Source', widget.source),
           _row(context, 'Original location', widget.originalLocation),
@@ -166,14 +232,18 @@ class _RestoreDialogState extends State<RestoreDialog> {
               style: theme.textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
+            _filters(shown),
+            const SizedBox(height: 8),
             ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 260),
-              child: ListView.separated(
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: Builder(builder: (context) {
+                final visible = _visible(shown);
+                return ListView.separated(
                 shrinkWrap: true,
-                itemCount: shown.items.length,
+                itemCount: visible.length,
                 separatorBuilder: (_, _) => const Divider(),
                 itemBuilder: (_, i) {
-                  final item = shown.items[i];
+                  final item = visible[i];
                   final color = switch (item.action) {
                     'conflict' || 'error' => scheme.error,
                     'overwrite' => Colors.orange.shade700,
@@ -191,9 +261,25 @@ class _RestoreDialogState extends State<RestoreDialog> {
                       formatBytes(item.size),
                       if (item.detail != null) item.detail!,
                     ].join(' · ')),
+                    trailing: item.versionId == null
+                        ? null
+                        : Row(mainAxisSize: MainAxisSize.min, children: [
+                            IconButton(
+                              tooltip: 'Compare: what is on disk now vs what would be restored',
+                              icon: const Icon(Icons.compare_arrows),
+                              onPressed: () => _compare(item),
+                            ),
+                            if (_done == null && item.action != 'identical')
+                              TextButton.icon(
+                                icon: const Icon(Icons.merge_type, size: 18),
+                                label: const Text('Resolve'),
+                                onPressed: _busy ? null : () => _resolve(item),
+                              ),
+                          ]),
                   );
                 },
-              ),
+              );
+              }),
             ),
             if (shown.conflicts > 0 && _done == null)
               Padding(

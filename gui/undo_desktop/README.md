@@ -22,6 +22,11 @@ contents itself; every action goes through the daemon's local API (`127.0.0.1`, 
 | Storage | Usage and deduplication savings, verify stored data, apply retention, garbage collection |
 | Settings | Every setting the CLI can change: compression, chunk deduplication, retention (rules, quota, how often it runs), monitoring, exclusions, capture and performance, maintenance schedule and log level, local API, appearance. Shows where `config.json` is. |
 
+Restoring always shows what will happen first: the preview can be filtered by outcome, any
+item can be compared with the file on disk, and conflicts can be resolved in a merge editor
+(keep disk, use version, or both, or edit the result; unfinished merges can be saved and
+resumed). See [Recovery › Comparing and resolving conflicts](../../docs/RECOVERY.md#comparing-and-resolving-conflicts).
+
 Restoring always shows what will happen first. A file is never overwritten without confirmation,
 and the current content is saved as a version before it is replaced.
 

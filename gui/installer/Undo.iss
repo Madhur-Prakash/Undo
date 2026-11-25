@@ -110,7 +110,7 @@
 #if !FileExists(AppExePath)
   #error gui\undo_desktop\build\windows\x64\runner\Release\Undo.exe is missing. Compile with BuildApp=1 to build it.
 #endif
-; Flutter stamps the pubspec version ("1.0.0+1"); Setup shows the part before "+".
+; Flutter stamps the pubspec version ("1.1.0+1"); Setup shows the part before "+".
 #define RawVersion GetStringFileInfo(AppExePath, "ProductVersion")
 #define AppVersion Pos("+", RawVersion) > 0 ? Copy(RawVersion, 1, Pos("+", RawVersion) - 1) : RawVersion
 

@@ -16,6 +16,7 @@ from undo_core.filesystem.exclusions import ExclusionMatcher, ExclusionRule
 from undo_core.filesystem.reconciler import Reconciler
 from undo_core.platform.paths import UndoPaths
 from undo_core.platform.permissions import secure_dir
+from undo_core.recovery.merge import delete_drafts
 from undo_core.recovery.restore import RestoreEngine
 from undo_core.storage.blob_store import BlobStore
 from undo_core.utils.errors import NotInitializedError
@@ -36,6 +37,7 @@ class UndoContext:
         )
         self.reconciler = Reconciler(self.db, self.capture, self.matcher_for, lambda: self.settings)
         self.restore = RestoreEngine(self.db, self.store, self.capture)
+        self.restore.after_write = lambda paths: delete_drafts(self.paths.data_dir, paths)
         self._matchers: dict[int, tuple[float, tuple[object, ...], ExclusionMatcher]] = {}
         self._matcher_lock = threading.Lock()
 

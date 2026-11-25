@@ -181,6 +181,22 @@ def restore(
         raise typer.Exit(EXIT_CONFLICT)
 
 
+@snapshot_app.command("rename")
+def rename(
+    ctx: typer.Context,
+    snapshot: str = typer.Argument(..., help="Snapshot id or name"),
+    new_name: str | None = typer.Argument(None, help="New name (quote names with spaces)"),
+    description: str | None = typer.Option(
+        None, "--description", "-d", help='New description ("" clears it)'
+    ),
+) -> None:
+    """Rename a snapshot and/or change its description. Its contents are unchanged."""
+    if new_name is None and description is None:
+        raise typer.BadParameter("give a new name and/or --description")
+    info = call(ctx, "rename_snapshot", ref=snapshot, name=new_name, description=description)
+    render.success(f"Snapshot {info['id']} is now '{info['name']}'")
+
+
 @snapshot_app.command("delete")
 def delete(
     ctx: typer.Context,

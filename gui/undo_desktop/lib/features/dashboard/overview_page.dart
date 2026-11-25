@@ -9,6 +9,7 @@ import '../../core/util/format.dart';
 import '../../shared/widgets.dart';
 import '../history/forget_dialog.dart';
 import '../history/version_details_dialog.dart';
+import '../restore/merge_editor.dart';
 import '../restore/rollback_dialog.dart';
 
 class OverviewPage extends ConsumerWidget {
@@ -37,6 +38,7 @@ class OverviewPage extends ConsumerWidget {
             const SizedBox(height: 16),
             const _RootsCard(),
             const SizedBox(height: 16),
+            const _MergeDraftsCard(),
             LayoutBuilder(builder: (context, c) {
               final children = [const _RecentChanges(), const _RecentSnapshots()];
               if (c.maxWidth < 1000) {
@@ -312,3 +314,56 @@ class _RecentSnapshots extends ConsumerWidget {
     );
   }
 }
+
+
+/// Unfinished merges saved with "Save progress": resume or discard them. Hidden when none.
+class _MergeDraftsCard extends ConsumerWidget {
+  const _MergeDraftsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final drafts = ref.watch(mergeDraftsProvider).value ?? const <MergeDraft>[];
+    if (drafts.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: SectionCard(
+        title: 'Unfinished merges (${drafts.length})',
+        padding: EdgeInsets.zero,
+        child: Column(children: [
+          for (final d in drafts)
+            ListTile(
+              leading: const Icon(Icons.merge_type),
+              title: Text(d.path, overflow: TextOverflow.ellipsis),
+              subtitle: Text('Version ${d.versionId} · progress saved ${formatRelative(d.updatedAt)}'),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                TextButton(
+                  onPressed: () async {
+                    final ok = await confirmDialog(
+                      context,
+                      title: 'Discard saved progress?',
+                      message: '${d.path}\n\nThe unfinished merge is deleted. The file is not touched.',
+                      confirm: 'Discard',
+                      destructive: true,
+                    );
+                    if (!ok || !context.mounted) return;
+                    await runAction(context, () => ref.read(apiProvider).deleteMergeDraft(d.path));
+                    ref.invalidate(mergeDraftsProvider);
+                  },
+                  child: const Text('Discard'),
+                ),
+                FilledButton.icon(
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('Resume'),
+                  onPressed: () async {
+                    await showMergeEditor(context, versionId: d.versionId, path: d.path);
+                    ref.invalidate(mergeDraftsProvider);
+                  },
+                ),
+              ]),
+            ),
+        ]),
+      ),
+    );
+  }
+}
+

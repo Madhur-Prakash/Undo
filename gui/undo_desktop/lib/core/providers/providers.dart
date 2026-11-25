@@ -100,6 +100,7 @@ final snapshotsProvider = FutureProvider.autoDispose<List<SnapshotInfo>>((ref) =
 final storageProvider = FutureProvider.autoDispose<StorageStats>((ref) => ref.watch(apiProvider).storageStats());
 final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) => ref.watch(apiProvider).settings());
 final exclusionsProvider = FutureProvider.autoDispose<List<ExclusionInfo>>((ref) => ref.watch(apiProvider).exclusions());
+final mergeDraftsProvider = FutureProvider.autoDispose<List<MergeDraft>>((ref) => ref.watch(apiProvider).mergeDrafts());
 final fileHistoryProvider =
     FutureProvider.autoDispose.family<FileHistory, int>((ref, id) => ref.watch(apiProvider).fileHistory(id));
 final versionDetailProvider =
@@ -167,4 +168,5 @@ void refreshAll(WidgetRef ref) {
   ref.invalidate(exclusionsProvider);
   ref.invalidate(filesProvider);
   ref.invalidate(fileHistoryProvider);
+  ref.invalidate(mergeDraftsProvider);
 }

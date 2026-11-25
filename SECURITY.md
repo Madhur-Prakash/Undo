@@ -11,8 +11,8 @@ matter. Thank you for reporting them responsibly.
 
 | Version | Security fixes |
 |---|---|
-| 1.0.x (latest) | Yes |
-| Older | No: update to the [latest release](https://github.com/Madhur-Prakash/Undo/releases/latest) |
+| 1.1.x (latest) | Yes |
+| 1.0.x and older | No: update to the [latest release](https://github.com/Madhur-Prakash/Undo/releases/latest) |
 
 ## Reporting a vulnerability
 
@@ -73,6 +73,8 @@ Report it privately through GitHub:
   is versioned first.
 * **Verified data:** every stored object is verified by its BLAKE3 hash when it is written and
   again before every restore.
+* **Tracked files only:** comparing a version with a file on disk, and merging, only read and
+  write files inside tracked folders, so the API cannot be used to read arbitrary files.
 * **Per-user install:** the Windows installer and autostart need no administrator rights, and
   the daemon runs as you.
 

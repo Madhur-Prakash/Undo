@@ -37,6 +37,7 @@ class UndoTUI(App[None]):
         ("q", "quit", "Quit"),
         ("f5", "refresh", "Refresh"),
         ("ctrl+r", "refresh", "Refresh"),
+        ("u", "drafts", "Unfinished merges"),
         *[
             (str(i + 1), f"show_tab('{tab_id}')", title)
             for i, (tab_id, title, _cls) in enumerate(TABS)
@@ -66,6 +67,11 @@ class UndoTUI(App[None]):
         active = self.query_one(TabbedContent).active
         if active == "dashboard":
             self.query_one("#pane-dashboard", DataPane).reload()
+
+    def action_drafts(self) -> None:
+        from undo_cli.tui.screens.merge import DraftsModal
+
+        self.push_screen(DraftsModal())
 
     def action_show_tab(self, tab: str) -> None:
         self.query_one(TabbedContent).active = tab

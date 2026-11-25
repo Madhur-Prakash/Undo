@@ -112,15 +112,66 @@ def get_snapshot(session: Session, snapshot_id: int) -> Snapshot:
 
 
 def find_snapshot(session: Session, ref: str) -> Snapshot:
-    """Resolve a snapshot by numeric id or by (unique) name."""
+    """Resolve a snapshot by numeric id or by (unique) name.
+
+    The exact name wins. Otherwise names are compared ignoring case, spaces, "-" and "_", so
+    `try1`, `Try-1` and `"try 1"` all find a snapshot named "try 1".
+    """
+    ref = ref.strip()
     if ref.isdigit():
         return get_snapshot(session, int(ref))
     matches = session.scalars(select(Snapshot).where(Snapshot.name == ref)).all()
     if not matches:
-        raise NotFoundError(f"Snapshot {ref!r} not found")
+
+        def loose(name: str) -> str:
+            return "".join(ch for ch in name.casefold() if ch not in " -_")
+
+        wanted = loose(ref)
+        matches = [s for s in session.scalars(select(Snapshot)) if loose(s.name) == wanted]
+    if not matches:
+        existing = list(session.scalars(select(Snapshot).order_by(Snapshot.id)))
+        if existing:
+            listed = ", ".join(f"{s.id} ({s.name})" for s in existing)
+            hint = (
+                f" Available: {listed}. Use the id, or put names with spaces in quotes, "
+                f'e.g. undo snapshot show "{existing[0].name}".'
+            )
+        else:
+            hint = " There are no snapshots yet (undo snapshot create --name NAME)."
+        raise NotFoundError(f"Snapshot {ref!r} not found.{hint}")
     if len(matches) > 1:
-        raise InvalidInputError(f"Several snapshots are named {ref!r}; use the numeric id")
+        ids = ", ".join(str(s.id) for s in matches)
+        raise InvalidInputError(f"Several snapshots match {ref!r} (ids {ids}); use the numeric id")
     return matches[0]
+
+
+def rename_snapshot(
+    session: Session,
+    snapshot_id: int,
+    *,
+    name: str | None = None,
+    description: str | None = None,
+) -> Snapshot:
+    """Change a snapshot's name and/or description. Names are unique within a folder (root)."""
+    snapshot = get_snapshot(session, snapshot_id)
+    if name is not None:
+        name = name.strip()
+        if not name:
+            raise InvalidInputError("Snapshot name must not be empty")
+        if name != snapshot.name:
+            clash = session.scalar(
+                select(Snapshot).where(
+                    Snapshot.root_id == snapshot.root_id,
+                    Snapshot.name == name,
+                    Snapshot.id != snapshot.id,
+                )
+            )
+            if clash is not None:
+                raise ConflictError(f"A snapshot named {name!r} already exists for this root")
+            snapshot.name = name
+    if description is not None:
+        snapshot.description = description.strip() or None
+    return snapshot
 
 
 def list_snapshots(session: Session, root_id: int | None) -> list[SnapshotInfo]:

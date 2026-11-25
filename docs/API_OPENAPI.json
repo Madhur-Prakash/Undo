@@ -3,7 +3,7 @@
   "info": {
     "title": "Undo local API",
     "description": "Local, token-protected API of the Undo daemon.",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "paths": {
     "/api/v1/ping": {
@@ -527,6 +527,33 @@
               "minimum": 0,
               "default": 0,
               "title": "Offset"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "path",
+                "size",
+                "modified",
+                "version",
+                "versions"
+              ],
+              "type": "string",
+              "default": "path",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "descending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Descending"
             }
           }
         ],
@@ -1081,6 +1108,100 @@
         }
       }
     },
+    "/api/v1/history/forget": {
+      "post": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Forget",
+        "description": "Remove the history of a file or a folder (optionally only versions older than `before`).",
+        "operationId": "forget_api_v1_history_forget_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForgetResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/versions/delete": {
+      "post": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Delete Versions",
+        "description": "Delete individual versions (not a file's latest version, not snapshot versions).",
+        "operationId": "delete_versions_api_v1_versions_delete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteVersionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForgetResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/versions/diff": {
       "get": {
         "tags": [
@@ -1120,6 +1241,306 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VersionDiff"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/versions/{version_id}/diff-file": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Diff With File",
+        "description": "Compare a stored version with a file on disk (default: the file's current location).",
+        "operationId": "diff_with_file_api_v1_versions__version_id__diff_file_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileDiff"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/versions/{version_id}/merge-source": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Merge Source",
+        "description": "Both sides for a merge editor: the file on disk now and the stored version.",
+        "operationId": "merge_source_api_v1_versions__version_id__merge_source_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergeSource"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/merge/write": {
+      "post": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Merge Write",
+        "description": "Write a merged result; the file's current content is saved as a version first.",
+        "operationId": "merge_write_api_v1_merge_write_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergeWriteResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/merge/drafts": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Merge Drafts",
+        "operationId": "merge_drafts_api_v1_merge_drafts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MergeDraft"
+                  },
+                  "type": "array",
+                  "title": "Response Merge Drafts Api V1 Merge Drafts Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/merge/draft": {
+      "put": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Save Merge Draft",
+        "operationId": "save_merge_draft_api_v1_merge_draft_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeDraftRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergeDraft"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Delete Merge Draft",
+        "operationId": "delete_merge_draft_api_v1_merge_draft_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "title": "Response Delete Merge Draft Api V1 Merge Draft Delete"
                 }
               }
             }
@@ -1615,6 +2036,62 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SnapshotDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "snapshots"
+        ],
+        "summary": "Rename Snapshot",
+        "description": "Rename a snapshot and/or change its description.",
+        "operationId": "rename_snapshot_api_v1_snapshots__ref__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ref"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameSnapshotRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotInfo"
                 }
               }
             }
@@ -2344,6 +2821,156 @@
         ],
         "title": "CreateSnapshotRequest"
       },
+      "DeleteVersionsRequest": {
+        "properties": {
+          "version_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Version Ids"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "version_ids"
+        ],
+        "title": "DeleteVersionsRequest"
+      },
+      "DiffHunk": {
+        "properties": {
+          "a_start": {
+            "type": "integer",
+            "title": "A Start"
+          },
+          "a_count": {
+            "type": "integer",
+            "title": "A Count"
+          },
+          "b_start": {
+            "type": "integer",
+            "title": "B Start"
+          },
+          "b_count": {
+            "type": "integer",
+            "title": "B Count"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/DiffRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "a_start",
+          "a_count",
+          "b_start",
+          "b_count",
+          "rows"
+        ],
+        "title": "DiffHunk"
+      },
+      "DiffRow": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "a_no": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "A No"
+          },
+          "a_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "A Text"
+          },
+          "b_no": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "B No"
+          },
+          "b_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "B Text"
+          },
+          "a_spans": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "A Spans"
+          },
+          "b_spans": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "B Spans"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "DiffRow",
+        "description": "One row of a side-by-side diff: the old line (a) next to the new line (b)."
+      },
       "DoctorCheck": {
         "properties": {
           "name": {
@@ -2461,6 +3088,88 @@
           "pattern"
         ],
         "title": "ExclusionRequest"
+      },
+      "FileDiff": {
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/VersionInfo"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "exists": {
+            "type": "boolean",
+            "title": "Exists"
+          },
+          "identical": {
+            "type": "boolean",
+            "title": "Identical"
+          },
+          "is_text": {
+            "type": "boolean",
+            "title": "Is Text"
+          },
+          "diff": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diff"
+          },
+          "hunks": {
+            "items": {
+              "$ref": "#/components/schemas/DiffHunk"
+            },
+            "type": "array",
+            "title": "Hunks"
+          },
+          "added": {
+            "type": "integer",
+            "title": "Added",
+            "default": 0
+          },
+          "removed": {
+            "type": "integer",
+            "title": "Removed",
+            "default": 0
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "size_delta": {
+            "type": "integer",
+            "title": "Size Delta",
+            "default": 0
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "path",
+          "exists",
+          "identical",
+          "is_text"
+        ],
+        "title": "FileDiff",
+        "description": "A stored version compared with a file on disk: left = the file now, right = the version.\n\nThis is what a restore of ``version`` to ``path`` would change."
       },
       "FileHistory": {
         "properties": {
@@ -2654,6 +3363,111 @@
           "offset"
         ],
         "title": "FilePage"
+      },
+      "ForgetRequest": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "A file (current or former path) or a folder inside a tracked root"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before",
+            "description": "Only remove versions older than this (ISO or relative: 30d). Latest is kept."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "title": "ForgetRequest"
+      },
+      "ForgetResult": {
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "files_examined": {
+            "type": "integer",
+            "title": "Files Examined",
+            "default": 0
+          },
+          "files_affected": {
+            "type": "integer",
+            "title": "Files Affected",
+            "default": 0
+          },
+          "files_removed": {
+            "type": "integer",
+            "title": "Files Removed",
+            "default": 0
+          },
+          "versions_removed": {
+            "type": "integer",
+            "title": "Versions Removed",
+            "default": 0
+          },
+          "versions_kept_in_snapshots": {
+            "type": "integer",
+            "title": "Versions Kept In Snapshots",
+            "default": 0
+          },
+          "removed_version_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Removed Version Ids"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dry_run",
+          "target"
+        ],
+        "title": "ForgetResult",
+        "description": "Result of removing history on purpose (a file, a folder, older versions, single versions)."
       },
       "GCReport": {
         "properties": {
@@ -2882,6 +3696,246 @@
         ],
         "title": "HealthInfo"
       },
+      "MergeDraft": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "version_id": {
+            "type": "integer",
+            "title": "Version Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "choices": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Choices"
+          },
+          "edited": {
+            "type": "boolean",
+            "title": "Edited",
+            "default": false
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "version_id",
+          "text"
+        ],
+        "title": "MergeDraft",
+        "description": "Saved progress of a merge, to resume later."
+      },
+      "MergeDraftRequest": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "version_id": {
+            "type": "integer",
+            "title": "Version Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "choices": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Choices"
+          },
+          "edited": {
+            "type": "boolean",
+            "title": "Edited",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "version_id",
+          "text"
+        ],
+        "title": "MergeDraftRequest"
+      },
+      "MergeSource": {
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/VersionInfo"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "exists": {
+            "type": "boolean",
+            "title": "Exists"
+          },
+          "current_lines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Current Lines"
+          },
+          "version_lines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Version Lines"
+          },
+          "current_hash": {
+            "type": "string",
+            "title": "Current Hash"
+          },
+          "line_ending": {
+            "type": "string",
+            "title": "Line Ending"
+          },
+          "hunks": {
+            "items": {
+              "$ref": "#/components/schemas/DiffHunk"
+            },
+            "type": "array",
+            "title": "Hunks"
+          },
+          "identical": {
+            "type": "boolean",
+            "title": "Identical",
+            "default": false
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MergeDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "path",
+          "exists",
+          "current_lines",
+          "version_lines",
+          "current_hash",
+          "line_ending"
+        ],
+        "title": "MergeSource",
+        "description": "Both sides of a merge: the file on disk now (left) and a stored version (right)."
+      },
+      "MergeWriteRequest": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "version_id": {
+            "type": "integer",
+            "title": "Version Id"
+          },
+          "expected_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Hash",
+            "description": "current_hash from merge-source; refused if the file changed since"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "text",
+          "version_id"
+        ],
+        "title": "MergeWriteRequest"
+      },
+      "MergeWriteResult": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "bytes_written": {
+            "type": "integer",
+            "title": "Bytes Written"
+          },
+          "pre_restore_version_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pre Restore Version Id"
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "bytes_written"
+        ],
+        "title": "MergeWriteResult"
+      },
       "PathHistoryInfo": {
         "properties": {
           "relative_path": {
@@ -3090,6 +4144,36 @@
         },
         "type": "object",
         "title": "RecoveryInfo"
+      },
+      "RenameSnapshotRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "New name (unique within the folder)"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "New description; empty string clears it"
+          }
+        },
+        "type": "object",
+        "title": "RenameSnapshotRequest"
       },
       "RestoreItem": {
         "properties": {
@@ -4304,6 +5388,23 @@
               }
             ],
             "title": "Diff"
+          },
+          "hunks": {
+            "items": {
+              "$ref": "#/components/schemas/DiffHunk"
+            },
+            "type": "array",
+            "title": "Hunks"
+          },
+          "added": {
+            "type": "integer",
+            "title": "Added",
+            "default": 0
+          },
+          "removed": {
+            "type": "integer",
+            "title": "Removed",
+            "default": 0
           },
           "truncated": {
             "type": "boolean",

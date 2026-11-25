@@ -16,6 +16,45 @@ undo restore ~/project/config.yml --version 42 --dry-run
 undo restore ~/project/config.yml --version 42 --overwrite
 ```
 
+## Comparing and resolving conflicts
+
+A restore never replaces a file that changed: it reports a **conflict**. Before deciding, you can
+see exactly what differs, and merge the two like a merge conflict.
+
+**Filter the preview** (app): chips above the list show each outcome with its count (*Conflicts*,
+*Errors*, *Overwrite*, *Create*, *Identical*). Conflicts and errors are listed first. In the TUI
+preview, `t` cycles the filter.
+
+**Compare** an item with the file on disk, side by side: left is the file now, right is what the
+restore would write.
+
+* App: the compare icon on the item, or on a version in a file's history.
+* CLI: `undo diff-file VERSION [PATH]`.
+* TUI: `c` on the item in the restore preview.
+
+**Resolve** opens the merge editor, in all three interfaces:
+
+* App: *Resolve* on a conflict, error or overwrite in the restore preview, or *Edit and merge*
+  in any comparison.
+* TUI: `m` in the restore preview, or on a version in a file's history.
+* CLI: `undo merge VERSION [PATH]` asks for each difference, then what to do with the result.
+
+In the editor:
+
+1. Each difference shows the disk on the left and the version on the right. Choose **Keep disk**,
+   **Use version** or **Both**, or use *Keep disk for all* / *Use version for all*.
+2. The **Result** below updates from your choices. You can also edit it freely by hand.
+3. **Save to file** writes the result. The file's current content is saved as a version first, so
+   this can be undone, and the save is refused if the file changed since the editor opened.
+4. **Save progress** keeps an unfinished merge. Closing with unsaved changes asks: *Save
+   progress*, *Discard* or *Keep editing*. Opening the same file's merge again offers to
+   **Resume**. Unfinished merges are listed in the app (*Overview* > **Unfinished merges**),
+   the TUI (`u`) and by `undo merge-drafts`.
+
+Saved progress is stored in the data directory (`merge-drafts/`) and deleted automatically once
+the file is merged or restored. Identical files have nothing to resolve; their comparison just
+says so. Binary files and files over 2 MiB cannot be merged; restore them to another folder.
+
 ## Rolling back a whole folder
 
 Puts every file in a folder back the way it was at a point in time. No snapshot is needed: every

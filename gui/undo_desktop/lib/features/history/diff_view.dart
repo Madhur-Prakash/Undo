@@ -5,7 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../core/models/models.dart';
-import '../../core/util/format.dart';
+import '../../shared/widgets.dart';
 
 enum DiffMode { sideBySide, inline }
 
@@ -92,11 +92,11 @@ class _DiffViewState extends State<DiffView> {
           Row(
             children: [
               Expanded(
-                child: _FileHeader(version: d.a, color: Colors.red),
+                child: _FileHeader(label: d.leftLabel, color: Colors.red),
               ),
               const SizedBox(width: 1),
               Expanded(
-                child: _FileHeader(version: d.b, color: Colors.green),
+                child: _FileHeader(label: d.rightLabel, color: Colors.green),
               ),
             ],
           ),
@@ -234,8 +234,8 @@ class _Stat extends StatelessWidget {
 }
 
 class _FileHeader extends StatelessWidget {
-  const _FileHeader({required this.version, required this.color});
-  final VersionInfo version;
+  const _FileHeader({required this.label, required this.color});
+  final String label;
   final Color color;
 
   @override
@@ -243,7 +243,7 @@ class _FileHeader extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     color: color.withValues(alpha: 0.10),
     child: Text(
-      'v${version.id} · ${version.relativePath} · ${formatDateTime(version.timestamp)}',
+      label,
       style: Theme.of(context).textTheme.labelLarge,
       overflow: TextOverflow.ellipsis,
     ),
@@ -392,3 +392,56 @@ class _InlineLine extends StatelessWidget {
     ),
   );
 }
+
+/// Shows a comparison in a large dialog: side by side, switchable to inline.
+/// [onEdit], when given, adds an "Edit and merge" button (opens the merge editor).
+Future<void> showDiffDialog(
+  BuildContext context, {
+  required String title,
+  required Future<VersionDiff> future,
+  VoidCallback? onEdit,
+}) {
+  final size = MediaQuery.sizeOf(context);
+  return showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(title),
+      content: SizedBox(
+        width: math.min(1500, size.width * 0.9),
+        height: math.min(900, size.height * 0.78),
+        child: FutureBuilder<VersionDiff>(
+          future: future,
+          builder: (ctx, snap) {
+            if (snap.hasError) return ErrorView(message: snap.error.toString());
+            if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+            final d = snap.data!;
+            if (d.hunks.isEmpty) {
+              return EmptyState(
+                icon: Icons.compare_arrows,
+                title: d.identical ? 'Identical: nothing would change' : (d.note ?? 'No text differences'),
+                message: [
+                  if (d.note != null && !d.identical) d.note!,
+                  'Size difference: ${d.sizeDelta >= 0 ? '+' : ''}${d.sizeDelta} bytes',
+                ].join('\n'),
+              );
+            }
+            return DiffView(diff: d);
+          },
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        if (onEdit != null)
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              onEdit();
+            },
+            icon: const Icon(Icons.merge_type),
+            label: const Text('Edit and merge'),
+          ),
+      ],
+    ),
+  );
+}
+

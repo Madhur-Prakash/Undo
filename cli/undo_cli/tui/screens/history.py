@@ -101,6 +101,8 @@ class FileHistoryScreen(Screen[None]):
         ("i", "info", "Version details"),
         ("x", "delete_version", "Delete version"),
         ("f", "forget", "Delete history"),
+        ("c", "compare_disk", "Compare with disk"),
+        ("m", "merge", "Merge into file"),
     ]
     DEFAULT_CSS = """
     FileHistoryScreen #summary { height: auto; padding: 1; }
@@ -143,7 +145,8 @@ class FileHistoryScreen(Screen[None]):
             f"{f['version_count']} versions · size {size(f.get('size'))}"
             + (f"\n[dim]former paths: {', '.join(former)}[/dim]" if former else "")
             + "\n[dim]r restore · d diff with previous · v view · i details · "
-            "x delete version · f delete history · Esc back[/dim]"
+            "x delete version · f delete history · c compare with disk · m merge into file · "
+            "Esc back[/dim]"
         )
         table = self.query_one(DataTable)
         table.clear()
@@ -236,6 +239,39 @@ class FileHistoryScreen(Screen[None]):
         self.app.call_from_thread(
             self.app.push_screen, TextModal(f"Version {version_id}", Text(body))
         )
+
+    def action_compare_disk(self) -> None:
+        v = self._selected()
+        if v and v["blob_hash"]:
+            self.fetch_compare_disk(v["id"])
+
+    @work(thread=True)
+    def fetch_compare_disk(self, version_id: int) -> None:
+        try:
+            d = self.app.backend.call("diff_version_with_file", version_id=version_id)  # type: ignore[attr-defined]
+        except UndoError as exc:
+            self.app.call_from_thread(self.app.notify, exc.message, severity="error")
+            return
+        body: Any = (
+            Group(render.side_by_side_diff(d), render.diff_summary(d))
+            if d.get("hunks")
+            else render.diff_summary(d)
+        )
+        self.app.call_from_thread(
+            self.app.push_screen, TextModal(f"Disk vs version {version_id} (m to merge)", body)
+        )
+
+    def action_merge(self) -> None:
+        v = self._selected()
+        if not v or not v["blob_hash"]:
+            return
+        from undo_cli.tui.screens.merge import MergeScreen
+
+        def done(written: bool | None) -> None:
+            if written:
+                self.load()
+
+        self.app.push_screen(MergeScreen(v["id"]), done)
 
     def action_delete_version(self) -> None:
         v = self._selected()

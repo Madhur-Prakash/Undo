@@ -99,6 +99,7 @@ class _SnapshotsPageState extends ConsumerState<SnapshotsPage> {
                 ].join(' · ')),
                 trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                   TextButton.icon(onPressed: () => _restore(s), icon: const Icon(Icons.restore), label: const Text('Restore')),
+                  IconButton(tooltip: 'Rename snapshot', onPressed: () => _rename(s), icon: const Icon(Icons.edit_outlined)),
                   IconButton(tooltip: 'Delete snapshot', onPressed: () => _delete(s), icon: const Icon(Icons.delete_outline)),
                 ]),
               );
@@ -170,6 +171,50 @@ class _SnapshotsPageState extends ConsumerState<SnapshotsPage> {
       run: (dest, overwrite, dry) => api.restoreSnapshot(s.id, destination: dest, overwrite: overwrite, dryRun: dry),
     );
     if (res != null) refreshAll(ref);
+  }
+
+  Future<void> _rename(SnapshotInfo s) async {
+    final name = TextEditingController(text: s.name);
+    final description = TextEditingController(text: s.description ?? '');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename snapshot'),
+        content: SizedBox(
+          width: 480,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: name, autofocus: true, decoration: const InputDecoration(labelText: 'Name')),
+            const SizedBox(height: 12),
+            TextField(
+              controller: description,
+              decoration: const InputDecoration(labelText: 'Description (optional)'),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Rename')),
+        ],
+      ),
+    );
+    final newName = name.text.trim();
+    final newDescription = description.text.trim();
+    name.dispose();
+    description.dispose();
+    if (ok != true || !mounted) return;
+    if (newName.isEmpty) {
+      showMessage(context, 'The name must not be empty', error: true);
+      return;
+    }
+    final changedName = newName != s.name ? newName : null;
+    final changedDescription = newDescription != (s.description ?? '') ? newDescription : null;
+    if (changedName == null && changedDescription == null) return;
+    await runAction(
+      context,
+      () => ref.read(apiProvider).renameSnapshot(s.id, name: changedName, description: changedDescription),
+      success: 'Snapshot renamed',
+    );
+    refreshAll(ref);
   }
 
   Future<void> _delete(SnapshotInfo s) async {

@@ -70,6 +70,11 @@ class DryRunRequest(BaseModel):
     dry_run: bool = True
 
 
+class RenameSnapshotRequest(BaseModel):
+    name: str | None = Field(None, description="New name (unique within the folder)")
+    description: str | None = Field(None, description="New description; empty string clears it")
+
+
 class ForgetRequest(BaseModel):
     path: str = Field(
         ..., description="A file (current or former path) or a folder inside a tracked root"
@@ -84,6 +89,23 @@ class ForgetRequest(BaseModel):
 class DeleteVersionsRequest(BaseModel):
     version_ids: list[int] = Field(..., min_length=1)
     dry_run: bool = False
+
+
+class MergeWriteRequest(BaseModel):
+    path: str
+    text: str
+    version_id: int
+    expected_hash: str | None = Field(
+        None, description="current_hash from merge-source; refused if the file changed since"
+    )
+
+
+class MergeDraftRequest(BaseModel):
+    path: str
+    version_id: int
+    text: str
+    choices: dict[str, str] = Field(default_factory=dict)
+    edited: bool = False
 
 
 class ExclusionRequest(BaseModel):

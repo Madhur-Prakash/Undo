@@ -6,10 +6,19 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 
 from undo_core.api.dependencies import get_service
-from undo_core.api.schemas import DeleteVersionsRequest, ForgetRequest
+from undo_core.api.schemas import (
+    DeleteVersionsRequest,
+    ForgetRequest,
+    MergeDraftRequest,
+    MergeWriteRequest,
+)
 from undo_core.domain import (
+    FileDiff,
     FileHistory,
     ForgetResult,
+    MergeDraft,
+    MergeSource,
+    MergeWriteResult,
     VersionContent,
     VersionDetail,
     VersionDiff,
@@ -61,6 +70,55 @@ def delete_versions(
 @router.get("/versions/diff", response_model=VersionDiff)
 def diff(a: int, b: int, service: UndoService = Depends(get_service)) -> VersionDiff:
     return service.diff_versions(a, b)
+
+
+@router.get("/versions/{version_id}/diff-file", response_model=FileDiff)
+def diff_with_file(
+    version_id: int, path: str | None = None, service: UndoService = Depends(get_service)
+) -> FileDiff:
+    """Compare a stored version with a file on disk (default: the file's current location)."""
+    return service.diff_version_with_file(version_id, path)
+
+
+@router.get("/versions/{version_id}/merge-source", response_model=MergeSource)
+def merge_source(
+    version_id: int, path: str | None = None, service: UndoService = Depends(get_service)
+) -> MergeSource:
+    """Both sides for a merge editor: the file on disk now and the stored version."""
+    return service.merge_source(version_id, path)
+
+
+@router.post("/merge/write", response_model=MergeWriteResult)
+def merge_write(
+    body: MergeWriteRequest, service: UndoService = Depends(get_service)
+) -> MergeWriteResult:
+    """Write a merged result; the file's current content is saved as a version first."""
+    return service.merge_write(
+        path=body.path, text=body.text, version_id=body.version_id, expected_hash=body.expected_hash
+    )
+
+
+@router.get("/merge/drafts", response_model=list[MergeDraft])
+def merge_drafts(service: UndoService = Depends(get_service)) -> list[MergeDraft]:
+    return service.list_merge_drafts()
+
+
+@router.put("/merge/draft", response_model=MergeDraft)
+def save_merge_draft(
+    body: MergeDraftRequest, service: UndoService = Depends(get_service)
+) -> MergeDraft:
+    return service.save_merge_draft(
+        path=body.path,
+        version_id=body.version_id,
+        text=body.text,
+        choices=body.choices,
+        edited=body.edited,
+    )
+
+
+@router.delete("/merge/draft")
+def delete_merge_draft(path: str, service: UndoService = Depends(get_service)) -> dict[str, int]:
+    return {"deleted": service.delete_merge_draft(path)}
 
 
 @router.get("/versions/{version_id}", response_model=VersionDetail)

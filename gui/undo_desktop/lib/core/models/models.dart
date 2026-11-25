@@ -1,4 +1,5 @@
 // Data classes mirroring the backend's pydantic models (undo_core/domain.py).
+import '../util/format.dart';
 
 DateTime? _dt(Object? v) =>
     v == null ? null : DateTime.parse(v as String).toLocal();
@@ -282,10 +283,17 @@ class DiffHunk {
   String get header => '@@ -$aStart,$aCount +$bStart,$bCount @@';
 }
 
+String _versionLabel(VersionInfo v) => 'v${v.id} · ${v.relativePath} · ${formatDateTime(v.timestamp)}';
+
+/// A comparison shown side by side. Either two versions ([fromJson]), or a stored version
+/// compared with the file on disk ([fromFileJson]: left = the file now, right = the version,
+/// i.e. what a restore would change).
 class VersionDiff {
   VersionDiff.fromJson(Map<String, dynamic> j)
     : a = VersionInfo.fromJson((j['a'] as Map).cast<String, dynamic>()),
       b = VersionInfo.fromJson((j['b'] as Map).cast<String, dynamic>()),
+      leftLabel = _versionLabel(VersionInfo.fromJson((j['a'] as Map).cast<String, dynamic>())),
+      rightLabel = _versionLabel(VersionInfo.fromJson((j['b'] as Map).cast<String, dynamic>())),
       identical = j['identical'] as bool,
       isText = j['is_text'] as bool,
       diff = j['diff'] as String?,
@@ -298,8 +306,30 @@ class VersionDiff {
       truncated = j['truncated'] as bool? ?? false,
       sizeDelta = _i(j['size_delta']),
       note = j['note'] as String?;
-  final VersionInfo a;
+
+  VersionDiff.fromFileJson(Map<String, dynamic> j)
+    : a = null,
+      b = VersionInfo.fromJson((j['version'] as Map).cast<String, dynamic>()),
+      leftLabel = (j['exists'] as bool? ?? true) ? 'Now on disk · ${j['path']}' : 'Not on disk yet · ${j['path']}',
+      rightLabel =
+          'Will be restored: ${_versionLabel(VersionInfo.fromJson((j['version'] as Map).cast<String, dynamic>()))}',
+      identical = j['identical'] as bool,
+      isText = j['is_text'] as bool,
+      diff = j['diff'] as String?,
+      hunks = [
+        for (final h in (j['hunks'] as List?) ?? const [])
+          DiffHunk.fromJson((h as Map).cast<String, dynamic>()),
+      ],
+      added = _i(j['added']),
+      removed = _i(j['removed']),
+      truncated = j['truncated'] as bool? ?? false,
+      sizeDelta = _i(j['size_delta']),
+      note = j['note'] as String?;
+
+  final VersionInfo? a; // null when the left side is the file on disk
   final VersionInfo b;
+  final String leftLabel;
+  final String rightLabel;
   final bool identical;
   final bool isText;
   final String? diff;
@@ -571,3 +601,60 @@ class ForgetResult {
   final int versionsKeptInSnapshots;
   final String? note;
 }
+
+/// Saved progress of a merge, to resume later.
+class MergeDraft {
+  MergeDraft.fromJson(Map<String, dynamic> j)
+    : path = j['path'] as String,
+      versionId = _i(j['version_id']),
+      text = j['text'] as String,
+      choices = ((j['choices'] as Map?) ?? const {}).map((k, v) => MapEntry(k.toString(), v.toString())),
+      edited = j['edited'] as bool? ?? false,
+      updatedAt = _dt(j['updated_at']);
+  final String path;
+  final int versionId;
+  final String text;
+  final Map<String, String> choices; // hunk index -> disk | version | both
+  final bool edited;
+  final DateTime? updatedAt;
+}
+
+/// Both sides of a merge: the file on disk now (left) and a stored version (right).
+class MergeSource {
+  MergeSource.fromJson(Map<String, dynamic> j)
+    : version = VersionInfo.fromJson((j['version'] as Map).cast<String, dynamic>()),
+      path = j['path'] as String,
+      exists = j['exists'] as bool,
+      currentLines = [for (final l in j['current_lines'] as List) l as String],
+      versionLines = [for (final l in j['version_lines'] as List) l as String],
+      currentHash = j['current_hash'] as String,
+      lineEnding = j['line_ending'] as String,
+      hunks = [for (final h in (j['hunks'] as List?) ?? const []) DiffHunk.fromJson((h as Map).cast<String, dynamic>())],
+      identical = j['identical'] as bool? ?? false,
+      draft = j['draft'] == null ? null : MergeDraft.fromJson((j['draft'] as Map).cast<String, dynamic>());
+  final VersionInfo version;
+  final String path;
+  final bool exists;
+  final List<String> currentLines;
+  final List<String> versionLines;
+  final String currentHash;
+  final String lineEnding;
+  final List<DiffHunk> hunks;
+  final bool identical;
+  final MergeDraft? draft;
+}
+
+class MergeWriteResult {
+  MergeWriteResult.fromJson(Map<String, dynamic> j)
+    : path = j['path'] as String,
+      bytesWritten = _i(j['bytes_written']),
+      preRestoreVersionId = _in(j['pre_restore_version_id']),
+      versionId = _in(j['version_id']),
+      note = j['note'] as String?;
+  final String path;
+  final int bytesWritten;
+  final int? preRestoreVersionId;
+  final int? versionId;
+  final String? note;
+}
+

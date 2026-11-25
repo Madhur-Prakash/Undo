@@ -69,6 +69,9 @@ Every `undo` command, option and setting. For step-by-step recipes see
 | `undo log [-n N] [--since 1d] [--root R] [-s KEY] [-r]` | Recent changes across roots, newest first. `--sort` by `time`, `path`, `size` or `operation`. |
 | `undo search QUERY` | Match current and former paths. |
 | `undo show VERSION` | Version details: hash, compression, storage, references, neighbours. |
+| `undo merge VERSION [PATH] [--all disk\|version] [-y]` | Resolve a restore like a merge conflict, interactively: for each difference [d]isk / [v]ersion / [b]oth, then write to the file (current content saved as a version first), edit in your editor, save progress, or discard. Offers to resume saved progress. Tracked files only; not binary, at most 2 MiB. |
+| `undo merge-drafts [--discard PATH]` | List unfinished merges (resume with `undo merge VERSION`), or delete one. |
+| `undo diff-file VERSION [PATH] [-u]` | Compare a stored version with the file on disk (default: the file's current location), side by side: left is the file now, right the version, i.e. what restoring it would change. Only files inside tracked folders. |
 | `undo diff A B [-u]` | Side-by-side diff of two text versions: old on the left, new on the right, changed characters highlighted, `+added -removed` summary. `-u` (or a terminal under 100 columns) prints a unified diff. Line-ending changes (CRLF/LF) are ignored and reported in the summary. |
 | `undo cat VERSION` | Print a text version. |
 | `undo forget PATH [--before TIME] [--dry-run] [-y]` | Remove the history of one file or one folder. With `--before` (ISO or relative: `30d`, `2w`) only older versions go and each file's latest version is kept. Shows a preview and asks first. Snapshot versions are kept. Files that still exist start a new history. |
@@ -94,9 +97,10 @@ Every `undo` command, option and setting. For step-by-step recipes see
 |---|---|
 | `undo snapshot create --name NAME [--root R] [-d TEXT] [--no-scan]` | Scan the root, then record every file's current version. |
 | `undo snapshot list [--root R] [-s KEY] [-r]` | List snapshots, newest first. `--sort` by `created`, `name`, `root`, `files` or `size`. |
-| `undo snapshot show ID\|NAME` | Files in the snapshot. |
+| `undo snapshot show ID\|NAME` | Files in the snapshot. Names match ignoring case, spaces, `-` and `_` (`try1` finds "try 1"); quote names with spaces, or use the id. |
 | `undo snapshot diff A B` | Added / removed / modified between two snapshots. |
 | `undo snapshot restore ID\|NAME [--to DIR] [--path SUBDIR] [--overwrite] [--dry-run]` | Restore. |
+| `undo snapshot rename ID\|NAME [NEW_NAME] [-d TEXT]` | Rename a snapshot and/or change its description (`-d ""` clears it). Names are unique per folder. |
 | `undo snapshot delete ID\|NAME [-y]` | Delete (versions remain). |
 
 ## Storage
@@ -158,11 +162,13 @@ setting below can also be changed on the app's **Settings** page; exclusion patt
 
 | Where | Keys |
 |---|---|
-| Everywhere | `1`–`7` switch tabs (Dashboard, Roots, Files, History, Snapshots, Storage, Settings) · `F5` / `Ctrl+R` refresh · `q` quit |
+| Everywhere | `1`–`7` switch tabs (Dashboard, Roots, Files, History, Snapshots, Storage, Settings) · `u` unfinished merges (Enter resume, `x` discard) · `F5` / `Ctrl+R` refresh · `q` quit |
 | Roots | `a` add · `s` scan · `e` enable/disable · `x` untrack (history kept) · `f` delete history of the folder or a subfolder (all, or older than e.g. `30d`) |
 | Files | type to search · tick *Include deleted* · `Enter` opens the file's history |
-| File history | `v` view content · `d` compare with previous (side by side) · `i` details · `r` restore · `x` delete this version (not the latest) · `f` delete the file's history (all, or older than e.g. `30d`) · `Esc` back |
-| Snapshots | `c` create · `d` compare · `r` restore · `x` delete |
+| File history | `v` view content · `d` compare with previous (side by side) · `i` details · `r` restore · `x` delete this version (not the latest) · `f` delete the file's history (all, or older than e.g. `30d`) · `c` compare with the file on disk · `m` merge into the file · `Esc` back |
+| Snapshots | `c` create · `d` compare · `r` restore · `n` rename · `x` delete |
+| Restore preview | `c` compare the selected file with the disk · `m` resolve it (merge editor) · `t` cycle the filter (all, conflict, error, overwrite, create, identical); conflicts and errors are listed first |
+| Merge editor | `n` / `p` next / previous difference · `1` keep disk · `2` use version · `3` both · `a` / `v` all disk / all version · `e` edit the result (`Esc` back) · `Ctrl+S` save to file · `Ctrl+D` save progress · `q` close (asks about unsaved changes) |
 | Storage | buttons: Verify · GC preview · Run GC · Retention preview · Apply retention (removes old versions now, then frees the space) |
 
 Restores always show a **Preview** first, and replacing existing files needs the *Overwrite* tick.

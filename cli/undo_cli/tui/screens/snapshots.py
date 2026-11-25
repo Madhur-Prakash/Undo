@@ -28,16 +28,18 @@ class SnapshotsPane(DataPane):
         ("d", "diff", "Compare"),
         ("r", "restore", "Restore"),
         ("x", "delete", "Delete"),
+        ("n", "rename", "Rename"),
     ]
 
     def compose(self) -> ComposeResult:
         yield Label(
-            "[bold]Snapshots[/bold]  [dim]c create · d compare · r restore · x delete[/dim]"
+            "[bold]Snapshots[/bold]  [dim]c create · d compare · r restore · n rename · x delete[/dim]"
         )
         with Horizontal():
             yield Button("Create", id="create", variant="primary")
             yield Button("Compare", id="diff")
             yield Button("Restore", id="restore", variant="warning")
+            yield Button("Rename", id="rename")
             yield Button("Delete", id="delete", variant="error")
             yield SortBar(sorting.SNAPSHOT_SORTS, "created", id="sortbar")
         yield DataTable(id="snaps", cursor_type="row", zebra_stripes=True)
@@ -175,6 +177,46 @@ class SnapshotsPane(DataPane):
                     {"ref": str(snap["id"])},
                 )
             )
+
+    def action_rename(self) -> None:
+        snap = self._selected()
+        if not snap:
+            return
+
+        def done(values: dict[str, str] | None) -> None:
+            if not values:
+                return
+            name = values["name"].strip()
+            description = values["description"].strip()
+            changes: dict[str, str] = {}
+            if name and name != snap["name"]:
+                changes["name"] = name
+            if description != (snap.get("description") or ""):
+                changes["description"] = description
+            if changes:
+                self.run_rename(str(snap["id"]), changes)
+
+        self.app.push_screen(
+            PromptModal(
+                f"Rename snapshot '{snap['name']}'",
+                [
+                    ("name", "Name", snap["name"]),
+                    ("description", "Description (empty to clear)", snap.get("description") or ""),
+                ],
+                "Rename",
+            ),
+            done,
+        )
+
+    @work(thread=True, group="snap-op")
+    def run_rename(self, ref: str, changes: dict[str, str]) -> None:
+        try:
+            info = self.backend.call("rename_snapshot", ref=ref, **changes)
+        except UndoError as exc:
+            self.app.call_from_thread(self.app.notify, exc.message, severity="error")
+            return
+        self.app.call_from_thread(self.app.notify, f"Snapshot is now '{info['name']}'")
+        self.app.call_from_thread(self.reload)
 
     def action_delete(self) -> None:
         snap = self._selected()

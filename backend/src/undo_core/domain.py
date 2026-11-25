@@ -395,6 +395,60 @@ class VersionDiff(_Model):
     note: str | None = None
 
 
+class FileDiff(_Model):
+    """A stored version compared with a file on disk: left = the file now, right = the version.
+
+    This is what a restore of ``version`` to ``path`` would change.
+    """
+
+    version: VersionInfo
+    path: str
+    exists: bool  # False: the file is not on disk (a restore would create it)
+    identical: bool
+    is_text: bool
+    diff: str | None = None
+    hunks: list[DiffHunk] = Field(default_factory=list)
+    added: int = 0
+    removed: int = 0
+    truncated: bool = False
+    size_delta: int = 0  # version size minus current size
+    note: str | None = None
+
+
+class MergeDraft(_Model):
+    """Saved progress of a merge, to resume later."""
+
+    path: str
+    version_id: int
+    text: str
+    choices: dict[str, str] = Field(default_factory=dict)  # hunk index -> disk | version | both
+    edited: bool = False
+    updated_at: datetime | None = None
+
+
+class MergeSource(_Model):
+    """Both sides of a merge: the file on disk now (left) and a stored version (right)."""
+
+    version: VersionInfo
+    path: str
+    exists: bool
+    current_lines: list[str]  # the file now, split exactly like the diff (no line endings)
+    version_lines: list[str]  # the stored version, split the same way
+    current_hash: str  # the merge is refused if the file changed since this
+    line_ending: str  # CRLF | LF: used when writing the result
+    hunks: list[DiffHunk] = Field(default_factory=list)
+    identical: bool = False
+    draft: MergeDraft | None = None
+
+
+class MergeWriteResult(_Model):
+    path: str
+    bytes_written: int
+    pre_restore_version_id: int | None = None  # the content that was replaced, saved first
+    version_id: int | None = None  # the merged content, recorded as a new version
+    note: str | None = None
+
+
 class DoctorCheck(_Model):
     name: str
     ok: bool

@@ -101,6 +101,40 @@ class UndoApi {
   Future<VersionDiff> diff(int a, int b) async =>
       VersionDiff.fromJson(_m(await _req<Object>('GET', '/versions/diff', query: {'a': a, 'b': b})));
 
+  /// A stored version compared with the file on disk ([path], default: the file's location).
+  Future<VersionDiff> diffWithFile(int versionId, {String? path}) async => VersionDiff.fromFileJson(
+      _m(await _req<Object>('GET', '/versions/$versionId/diff-file', query: {'path': ?path})));
+
+  // ----------------------------------------------------------------- merge (resolve a restore)
+  Future<MergeSource> mergeSource(int versionId, {String? path}) async => MergeSource.fromJson(
+      _m(await _req<Object>('GET', '/versions/$versionId/merge-source', query: {'path': ?path})));
+
+  /// Write the merged [text]; the file's current content is saved as a version first.
+  Future<MergeWriteResult> mergeWrite(String path, String text, {required int versionId, String? expectedHash}) async =>
+      MergeWriteResult.fromJson(_m(await _req<Object>('POST', '/merge/write', body: {
+        'path': path,
+        'text': text,
+        'version_id': versionId,
+        'expected_hash': expectedHash,
+      })));
+
+  Future<List<MergeDraft>> mergeDrafts() async => [
+        for (final d in (await _req<Object>('GET', '/merge/drafts')) as List)
+          MergeDraft.fromJson((d as Map).cast<String, dynamic>()),
+      ];
+
+  Future<MergeDraft> saveMergeDraft(String path,
+          {required int versionId, required String text, required Map<String, String> choices, required bool edited}) async =>
+      MergeDraft.fromJson(_m(await _req<Object>('PUT', '/merge/draft', body: {
+        'path': path,
+        'version_id': versionId,
+        'text': text,
+        'choices': choices,
+        'edited': edited,
+      })));
+
+  Future<void> deleteMergeDraft(String path) => _req<Object>('DELETE', '/merge/draft', query: {'path': path});
+
   // ----------------------------------------------------------------- restore
   Future<RestoreResult> restoreVersion(int versionId, {String? destination, bool overwrite = false, bool dryRun = true}) async =>
       RestoreResult.fromJson(_m(await _req<Object>('POST', '/restore/version', body: {
@@ -156,6 +190,13 @@ class UndoApi {
       RestoreResult.fromJson(_m(await _req<Object>('POST', '/snapshots/$id/restore',
           body: {'destination': destination, 'overwrite': overwrite, 'dry_run': dryRun})));
   Future<void> deleteSnapshot(int id) => _req<Object>('DELETE', '/snapshots/$id');
+
+  /// Rename a snapshot and/or change its description (an empty description clears it).
+  Future<SnapshotInfo> renameSnapshot(int id, {String? name, String? description}) async =>
+      SnapshotInfo.fromJson(_m(await _req<Object>('PATCH', '/snapshots/$id', body: {
+        'name': ?name,
+        'description': ?description,
+      })));
 
   // ----------------------------------------------------------------- storage
   Future<StorageStats> storageStats() async => StorageStats.fromJson(_m(await _req<Object>('GET', '/storage/stats')));
