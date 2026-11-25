@@ -1,7 +1,6 @@
 # Troubleshooting
 
-> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · [CLI](CLI.md) · [Recovery](RECOVERY.md) · **Troubleshooting** · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · [API](API.md)
-
+> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · [CLI](CLI.md) · [Recovery](RECOVERY.md) · **Troubleshooting** · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · [API](API.md) · [Contributing](../CONTRIBUTING.md) · [Security](../SECURITY.md)
 Each problem below has its cause and a fix you can copy and run.
 
 ## First, look

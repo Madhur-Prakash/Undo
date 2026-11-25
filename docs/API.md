@@ -1,7 +1,6 @@
 # Local API (v1)
 
-> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · [CLI](CLI.md) · [Recovery](RECOVERY.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · **API**
-
+> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · [CLI](CLI.md) · [Recovery](RECOVERY.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · **API** · [Contributing](../CONTRIBUTING.md) · [Security](../SECURITY.md)
 The JSON API the daemon serves for the CLI, the dashboard and the app. Use it from your own
 scripts on the same machine.
 

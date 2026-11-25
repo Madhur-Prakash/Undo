@@ -1,7 +1,6 @@
 # CLI reference
 
-> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · **CLI** · [Recovery](RECOVERY.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · [API](API.md)
-
+> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · **CLI** · [Recovery](RECOVERY.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · [API](API.md) · [Contributing](../CONTRIBUTING.md) · [Security](../SECURITY.md)
 Every `undo` command, option and setting. For step-by-step recipes see
 [Recovery](RECOVERY.md); for first-time setup see [Installation](INSTALLATION.md).
 

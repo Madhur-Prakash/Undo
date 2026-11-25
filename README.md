@@ -34,6 +34,7 @@ Every version of every file in the folders you choose, kept automatically.</p>
   <a href="gui/undo_desktop/README.md">Desktop app</a> &middot;
   <a href="docs/README.md">Documentation</a> &middot;
   <a href="CHANGELOG.md">Changelog</a> &middot;
+  <a href="CONTRIBUTING.md">Contributing</a> &middot;
   <a href="https://github.com/Madhur-Prakash/Undo/issues">Report an issue</a>
 </p>
 
@@ -288,6 +289,8 @@ Start at the **[documentation index](docs/README.md)**, which says where to look
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Dev setup, running each part, tests and checks, trying changes on a real install, releasing |
 | [gui/undo_desktop/README.md](gui/undo_desktop/README.md) | The desktop app: screens, how it finds the daemon, building it, code layout |
 | [gui/installer/Undo.iss](gui/installer/Undo.iss) | The Windows installer script (Inno Setup 7); comments at the top explain the build |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to report bugs, suggest features and contribute code |
+| [SECURITY.md](SECURITY.md) | Supported versions and how to report a vulnerability privately |
 | [CHANGELOG.md](CHANGELOG.md) | Changes in each version |
 | [LICENSE](LICENSE) | MIT license |
 
@@ -308,7 +311,9 @@ bash scripts/update_windows.sh      # Windows (Git Bash): build the installer fr
 bash scripts/update_linux.sh        # Linux: reinstall from this checkout and restart the daemon
 ```
 
-Full guide: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
+Full guide: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**. Before opening a pull request, read
+**[CONTRIBUTING.md](CONTRIBUTING.md)**. Security problems: see **[SECURITY.md](SECURITY.md)**
+(please report them privately, not as issues).
 
 | Script | Purpose |
 |---|---|

@@ -79,4 +79,4 @@ It bundles this app with the backend (`undo.exe`, `undo-daemon.exe`) into one se
 
 ---
 
-More: [Documentation index](../../docs/README.md) · [Installation](../../docs/INSTALLATION.md) · [Development](../../docs/DEVELOPMENT.md) · [Architecture](../../docs/ARCHITECTURE.md) · [Troubleshooting › Desktop app](../../docs/TROUBLESHOOTING.md#desktop-app-and-api)
+More: [Documentation index](../../docs/README.md) · [Installation](../../docs/INSTALLATION.md) · [Development](../../docs/DEVELOPMENT.md) · [Architecture](../../docs/ARCHITECTURE.md) · [Troubleshooting › Desktop app](../../docs/TROUBLESHOOTING.md#desktop-app-and-api) · [Contributing](../../CONTRIBUTING.md) · [Security](../../SECURITY.md)

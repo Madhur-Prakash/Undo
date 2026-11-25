@@ -142,6 +142,9 @@ First release.
 - `README.md`, plus guides in `docs/`: architecture, storage, CLI, API (with the generated
   OpenAPI file), installation, recovery and troubleshooting, with an index (`docs/README.md`)
   and a development guide (`docs/DEVELOPMENT.md`). Every page has the same navigation bar.
+- `CONTRIBUTING.md` (reporting bugs, making a change, checks, the rules the code follows) and
+  `SECURITY.md` (supported versions, reporting vulnerabilities privately, what is in scope),
+  linked from the README, the documentation index and every page's navigation bar.
 
 ### Known limitations
 

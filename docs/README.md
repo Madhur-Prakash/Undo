@@ -21,6 +21,8 @@
 | Fix something that is not working | [Troubleshooting](TROUBLESHOOTING.md) |
 | Update an install to the latest code | [Installation › Windows › Updating](INSTALLATION.md#updating) or [Linux server › Updating](INSTALLATION.md#updating-1) |
 | Work on Undo's code, run tests, try changes on a real install | [Development](DEVELOPMENT.md) |
+| Report a bug, suggest a feature, open a pull request | [Contributing](../CONTRIBUTING.md) |
+| Report a security problem privately | [Security policy](../SECURITY.md) |
 | Understand how it works inside | [Architecture](ARCHITECTURE.md) and [Storage](STORAGE.md) |
 | Call the daemon from my own scripts | [Local API](API.md) |
 
@@ -44,6 +46,8 @@ Elsewhere in the repository:
 | [README](../README.md) | What Undo is, features, quick start |
 | [Desktop app](../gui/undo_desktop/README.md) | The Flutter app: screens, how it finds the daemon, building it, code layout |
 | [Windows installer script](../gui/installer/Undo.iss) | Inno Setup script; the comments at the top explain the build |
+| [Contributing](../CONTRIBUTING.md) | Reporting bugs, suggesting features, making a change, checks, code rules |
+| [Security policy](../SECURITY.md) | Supported versions, reporting a vulnerability privately, what is in scope |
 | [Changelog](../CHANGELOG.md) | Changes in each version |
 | [License](../LICENSE) | MIT |
 

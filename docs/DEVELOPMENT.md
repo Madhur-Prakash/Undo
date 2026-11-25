@@ -1,9 +1,9 @@
 # Development
 
-> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · [CLI](CLI.md) · [Recovery](RECOVERY.md) · [Troubleshooting](TROUBLESHOOTING.md) · **Development** · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · [API](API.md)
-
+> **Undo docs** · [Index](README.md) · [Installation](INSTALLATION.md) · [CLI](CLI.md) · [Recovery](RECOVERY.md) · [Troubleshooting](TROUBLESHOOTING.md) · **Development** · [Architecture](ARCHITECTURE.md) · [Storage](STORAGE.md) · [API](API.md) · [Contributing](../CONTRIBUTING.md) · [Security](../SECURITY.md)
 How to work on Undo: set up a checkout, run each part, check your changes, and try them on a real
-installation with the update scripts.
+installation with the update scripts. For how to report bugs and open pull requests, see
+[CONTRIBUTING.md](../CONTRIBUTING.md); for security problems, [SECURITY.md](../SECURITY.md).
 
 **On this page:**
 
