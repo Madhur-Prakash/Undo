@@ -334,7 +334,7 @@ class _MergeDraftsCard extends ConsumerWidget {
           for (final d in drafts)
             ListTile(
               leading: Icon(d.resolved ? Icons.task_alt : Icons.merge_type),
-              title: Text(d.path, overflow: TextOverflow.ellipsis),
+              title: Text(d.path),
               subtitle: Text(d.resolved
                   ? 'Version ${d.versionId} · resolved ${formatRelative(d.updatedAt)} · applied when you restore this version'
                   : 'Version ${d.versionId} · progress saved ${formatRelative(d.updatedAt)}'),

@@ -1,6 +1,6 @@
 [project]
 name = "undo-cli"
-version = "1.2.0"
+version = "1.2.1"
 description = "Undo command line interface and Textual terminal dashboard."
 license = { text = "MIT" }
 authors = [{ name = "Madhur Prakash Mangal" }]

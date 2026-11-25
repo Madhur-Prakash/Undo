@@ -299,7 +299,6 @@ class _MergeEditorState extends ConsumerState<_MergeEditor> {
               child: Text(
                 source == null ? 'Resolve' : 'Resolve: ${source.path}',
                 style: theme.textTheme.titleLarge,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
             IconButton(tooltip: 'Close', onPressed: _busy ? null : _close, icon: const Icon(Icons.close)),

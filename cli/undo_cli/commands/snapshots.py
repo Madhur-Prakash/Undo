@@ -103,7 +103,7 @@ def show(
     )
     t = Table()
     for col in ("Path", "Version", "Size", "Hash"):
-        t.add_column(col)
+        t.add_column(col, overflow="fold")
     for e in data["entries"]:
         t.add_row(
             e["relative_path"],

@@ -3,7 +3,7 @@
   "info": {
     "title": "Undo local API",
     "description": "Local, token-protected API of the Undo daemon.",
-    "version": "1.2.0"
+    "version": "1.2.1"
   },
   "paths": {
     "/api/v1/ping": {

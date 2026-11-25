@@ -263,7 +263,7 @@ class _RestoreDialogState extends ConsumerState<RestoreDialog> {
                         ],
                       ),
                     ),
-                    title: Text(item.destination, overflow: TextOverflow.ellipsis),
+                    title: Text(item.destination), // full path; long paths wrap
                     subtitle: Text([
                       if (item.versionId != null) 'version ${item.versionId}',
                       formatBytes(item.size),

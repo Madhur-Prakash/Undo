@@ -5,6 +5,19 @@ All notable changes to Undo are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and Undo follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-11-26
+
+### Fixed
+
+- The desktop app shows **full file paths** instead of cutting them off with "…"; long paths
+  wrap onto the next line. This applies to:
+  - the restore preview (folder rollback, snapshot restore, single file);
+  - the merge editor's title and the comparison window's labels;
+  - *Overview* > *Saved merges*.
+- The `undo` command no longer shortens long paths with "…" in its tables (restore plans, files,
+  folders, snapshots, skipped files, saved merges); they wrap instead.
+- The TUI's restore preview shows the selected item's full path and detail below the table.
+
 ## [1.2.0] - 2026-11-26
 
 Resolving a conflict no longer writes the file straight away. Resolve several files, then
@@ -251,6 +264,7 @@ First release.
 - The desktop app cannot connect to a daemon on another machine: the API listens on `127.0.0.1`
   only. On servers, use `undo tui` over SSH.
 
+[1.2.1]: https://github.com/Madhur-Prakash/Undo/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Madhur-Prakash/Undo/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Madhur-Prakash/Undo/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Madhur-Prakash/Undo/releases/tag/v1.0.0

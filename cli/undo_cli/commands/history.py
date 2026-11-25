@@ -218,7 +218,7 @@ def register(app: typer.Typer) -> None:
             return
         t = Table(title=f"Search: {query}")
         for col in ("File", "Path", "Matched", "State", "Versions"):
-            t.add_column(col)
+            t.add_column(col, overflow="fold")
         for hit in data:
             f = hit["file"]
             t.add_row(
@@ -450,7 +450,7 @@ def register(app: typer.Typer) -> None:
             return
         t = Table(title="Saved merges")
         for col in ("File", "Version", "State", "Saved", "Next step"):
-            t.add_column(col)
+            t.add_column(col, overflow="fold")
         for d in drafts:
             resolved = bool(d.get("resolved"))
             t.add_row(

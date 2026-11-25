@@ -1,6 +1,6 @@
 [project]
 name = "undo-workspace"
-version = "1.2.0"
+version = "1.2.1"
 description = "Development workspace for Undo (backend + CLI)."
 requires-python = ">=3.12"
 dependencies = ["undo-core", "undo-cli"]

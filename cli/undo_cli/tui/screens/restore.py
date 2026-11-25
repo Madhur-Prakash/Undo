@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from rich.console import Group
+from rich.markup import escape
 from textual import work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -33,6 +34,7 @@ class RestoreModal(ModalScreen[dict[str, Any] | None]):
     RestoreModal > Vertical { width: 95%; height: 85%; border: thick $primary; background: $surface; padding: 1 2; }
     RestoreModal DataTable { height: 1fr; }
     RestoreModal #summary { height: auto; margin: 1 0; }
+    RestoreModal #selected { height: auto; margin-top: 1; color: $text-muted; }
     RestoreModal Horizontal { height: auto; align-horizontal: right; }
     RestoreModal Button { margin-left: 1; }
     """
@@ -71,6 +73,7 @@ class RestoreModal(ModalScreen[dict[str, Any] | None]):
             )
             yield Static("Press Preview to see exactly what will happen.", id="summary")
             yield DataTable(id="plan", zebra_stripes=True)
+            yield Static("", id="selected")  # the selected item's full path and detail
             with Horizontal():
                 yield Button("Close", id="close")
                 yield Button("Preview", id="preview", variant="primary")
@@ -129,6 +132,23 @@ class RestoreModal(ModalScreen[dict[str, Any] | None]):
                 size(item["size"]),
                 item.get("detail") or "",
             )
+        self._show_selected()
+
+    def _show_selected(self) -> None:
+        table = self.query_one("#plan", DataTable)
+        line = ""
+        if self.rows and 0 <= table.cursor_row < len(self.rows):
+            item = self.rows[table.cursor_row]
+            line = f"[bold]{escape(item['destination'])}[/bold]"
+            if item.get("detail"):
+                line += f"\n{escape(item['detail'])}"
+        self.query_one("#selected", Static).update(line)
+
+    def on_data_table_cell_highlighted(self, _event: DataTable.CellHighlighted) -> None:
+        self._show_selected()
+
+    def on_data_table_row_highlighted(self, _event: DataTable.RowHighlighted) -> None:
+        self._show_selected()
 
     def action_next_filter(self) -> None:
         if self.result is None:

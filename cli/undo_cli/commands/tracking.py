@@ -121,7 +121,7 @@ def register(app: typer.Typer) -> None:
             return
         t = Table(title="Skipped files")
         for col in ("Root", "Path", "Reason", "Detail", "Last seen", "Count"):
-            t.add_column(col)
+            t.add_column(col, overflow="fold")
         for s in data:
             t.add_row(
                 str(s["root_id"]),

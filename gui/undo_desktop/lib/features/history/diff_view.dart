@@ -245,7 +245,6 @@ class _FileHeader extends StatelessWidget {
     child: Text(
       label,
       style: Theme.of(context).textTheme.labelLarge,
-      overflow: TextOverflow.ellipsis,
     ),
   );
 }

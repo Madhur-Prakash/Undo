@@ -106,7 +106,9 @@ def roots_table(roots: list[dict[str, Any]]) -> Table:
     t = Table(box=box.SIMPLE_HEAD, title="Tracked roots")
     for col in ("ID", "Path", "State", "Files", "Deleted", "Versions", "Last scan", "Monitor"):
         t.add_column(
-            col, justify="right" if col in ("ID", "Files", "Deleted", "Versions") else "left"
+            col,
+            justify="right" if col in ("ID", "Files", "Deleted", "Versions") else "left",
+            overflow="fold",
         )
     for r in roots:
         t.add_row(
@@ -157,7 +159,7 @@ def versions_table(versions: list[dict[str, Any]], title: str = "Versions") -> T
     t.add_column("Operation")
     t.add_column("Size", justify="right")
     t.add_column("Hash")
-    t.add_column("Path")
+    t.add_column("Path", overflow="fold")
     for v in versions:
         extra = ""
         if v["metadata"].get("from_path"):
@@ -191,7 +193,9 @@ def activity_table(versions: list[dict[str, Any]]) -> Table:
 def files_table(files: list[dict[str, Any]], title: str = "Files") -> Table:
     t = Table(box=box.SIMPLE_HEAD, title=title)
     for col in ("ID", "Path", "Size", "Modified", "Versions", "Latest", "State"):
-        t.add_column(col, justify="right" if col in ("ID", "Size", "Versions") else "left")
+        t.add_column(
+            col, justify="right" if col in ("ID", "Size", "Versions") else "left", overflow="fold"
+        )
     for f in files:
         state = (
             Text("deleted " + when(f.get("deleted_at"), seconds=False), style="red")
@@ -213,7 +217,7 @@ def files_table(files: list[dict[str, Any]], title: str = "Files") -> Table:
 def restore_result(res: dict[str, Any]) -> None:
     t = Table(box=box.SIMPLE_HEAD, title="Restore plan" if res["dry_run"] else "Restore result")
     for col in ("Action", "Destination", "Version", "Size", "Detail"):
-        t.add_column(col)
+        t.add_column(col, overflow="fold")
     for item in res["items"]:
         t.add_row(
             Text(item["action"], style=ACTION_STYLE.get(item["action"], "")),
