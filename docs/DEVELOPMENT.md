@@ -186,8 +186,26 @@ Data written by an older version stays readable.
    packages, `__version__` and the Flutter `pubspec.yaml`, then builds.
 3. Run the checks above, then build the Windows installer
    ([how](INSTALLATION.md#building-the-installer)). It is named `Undo-Setup-X.Y.Z.exe`.
-4. On Linux, run `python scripts/build.py` for `dist/undo-linux.tar.gz`.
-5. Commit, tag `vX.Y.Z`, push, and attach both files to a GitHub release.
+4. Build the Linux release archive **on a Linux machine** (any one with uv and the checkout; with
+   Flutter installed it also contains the desktop app, without it the archive is server-only):
+
+```sh
+cd ~/undo
+git pull
+python3 scripts/build.py              # writes dist/undo-linux.tar.gz
+sha256sum dist/undo-linux.tar.gz      # line for SHA256SUMS.txt
+```
+
+5. Copy the archive to the computer you publish from (run this **there**), or upload it from the
+   Linux machine with `gh release upload vX.Y.Z dist/undo-linux.tar.gz`:
+
+```sh
+scp user@server:~/undo/dist/undo-linux.tar.gz .
+```
+
+6. Write `SHA256SUMS.txt` with one line per file (`sha256sum Undo-Setup-X.Y.Z.exe undo-linux.tar.gz`).
+7. Commit, tag `vX.Y.Z`, push, and attach `Undo-Setup-X.Y.Z.exe`, `undo-linux.tar.gz` and
+   `SHA256SUMS.txt` to a GitHub release.
 
 ## Conventions
 

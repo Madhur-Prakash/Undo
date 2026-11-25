@@ -313,6 +313,22 @@ undo --version
 uv downloads Python 3.12 if the server does not have it. `undo` is installed into
 `~/.local/bin`.
 
+**Or, from the release archive** (`undo-linux.tar.gz` on the
+[latest release](https://github.com/Madhur-Prakash/Undo/releases/latest)), without git:
+
+```sh
+curl -LO https://github.com/Madhur-Prakash/Undo/releases/latest/download/undo-linux.tar.gz
+tar xzf undo-linux.tar.gz
+cd undo-linux
+./installer/install.sh --no-desktop
+```
+
+* `install.sh` installs the `undo` command (with uv, else pipx, else pip), runs `undo init`
+  (step 3), and installs the systemd user service when one is available (step 5).
+* `--no-desktop` skips the desktop app, which a server does not need. `--no-service` skips the
+  service.
+* Removing it later: `./installer/uninstall.sh` (add `--remove-data` to delete the history too).
+
 ### 3. Initialise
 
 ```sh
